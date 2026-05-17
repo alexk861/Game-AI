@@ -18,6 +18,15 @@ export default function RevealScreen({ imageUrl, data, result }: RevealScreenPro
       : copy.reveal.wrong;
   const origin = revealOrigin(data);
 
+  const totalGuesses = data.guesses_ai + data.guesses_real;
+  const failureRate = totalGuesses > 0 
+    ? Math.round(((data.answer === 'ai' ? data.guesses_real : data.guesses_ai) / totalGuesses) * 100) 
+    : 0;
+  
+  // Game loop allows 10 seconds (10000ms). The `timeRemaining` is passed from SwipeCard.
+  const timeTaken = result?.timeRemaining !== undefined ? (10000 - result.timeRemaining) / 1000 : null;
+  const isFast = timeTaken !== null && timeTaken < 2.5;
+
   return (
     <main className="relative grid h-[100dvh] grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-background cinematic-bg reveal-breath animate-in fade-in duration-500">
       <div className="ambient-field" />
@@ -47,6 +56,30 @@ export default function RevealScreen({ imageUrl, data, result }: RevealScreenPro
           <p className="font-mono text-[10px] uppercase tracking-[0.15em] leading-relaxed text-muted/55">
             {revealConsensus(data)}
           </p>
+
+          <div className="mt-5 mb-5 grid gap-3 border-y border-outline-variant/40 py-4 max-w-xs">
+            {timeTaken !== null && (
+              <div className="flex justify-between items-center font-mono text-[10px] uppercase text-outline">
+                <span>YOUR REACTION:</span>
+                <span className={isFast ? "text-primary font-bold" : ""}>
+                  {timeTaken.toFixed(1)}S {isFast && <span className="text-error animate-pulse ml-1 tracking-widest">(FAST)</span>}
+                </span>
+              </div>
+            )}
+            
+            <div className="flex justify-between items-center font-mono text-[10px] uppercase text-outline">
+              <span>GLOBAL FAILURE RATE:</span>
+              <span className={failureRate > 50 ? "text-error" : ""}>
+                {totalGuesses > 0 ? `${failureRate}%` : '--%'}
+              </span>
+            </div>
+            
+            <div className="flex justify-between items-center font-mono text-[10px] uppercase text-outline">
+              <span>TOTAL OBSERVERS:</span>
+              <span>{totalGuesses}</span>
+            </div>
+          </div>
+
           <p className="mt-4 text-sm leading-relaxed text-muted/72">
             {origin}
           </p>
