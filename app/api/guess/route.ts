@@ -35,6 +35,9 @@ export async function POST(request: NextRequest) {
       context_short: string;
       ai_prompt: string | null;
       source_credit: string | null;
+      photographer_name: string | null;
+      photographer_url: string | null;
+      unsplash_url: string | null;
       guesses_ai: number;
       guesses_real: number;
     };
@@ -45,6 +48,9 @@ export async function POST(request: NextRequest) {
       context_short: result.context_short,
       ai_prompt: result.ai_prompt,
       source_credit: result.source_credit,
+      photographer_name: result.photographer_name,
+      photographer_url: result.photographer_url,
+      unsplash_url: result.unsplash_url,
       guesses_ai: result.guesses_ai,
       guesses_real: result.guesses_real,
     });

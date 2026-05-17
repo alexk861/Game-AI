@@ -30,6 +30,9 @@ export interface GuessResponse {
   context_short: string;
   ai_prompt: string | null;
   source_credit: string | null;
+  photographer_name: string | null;
+  photographer_url: string | null;
+  unsplash_url: string | null;
   guesses_ai: number;
   guesses_real: number;
 }
@@ -58,6 +61,9 @@ export interface RevealData {
   context_short: string;
   ai_prompt: string | null;
   source_credit: string | null;
+  photographer_name: string | null;
+  photographer_url: string | null;
+  unsplash_url: string | null;
   guesses_ai: number;
   guesses_real: number;
 }

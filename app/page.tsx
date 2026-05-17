@@ -91,6 +91,33 @@ export default function Home() {
 
     loadGame();
   }, []);
+  // ── Advance to next challenge or complete ──
+  const advanceToNext = useCallback((currentResults: GuessResult[]) => {
+    const nextIndex = currentResults.length;
+
+    if (nextIndex >= TOTAL_CHALLENGES || nextIndex >= challenges.length) {
+      // Set completed
+      const finalState = completeSet();
+      setStreak(finalState.currentStreak);
+
+      const score = currentResults.filter(r => r.correct).length;
+      analytics.setCompleted(score, finalState.currentStreak, setDate);
+
+      setPhase('completed');
+    } else {
+      // Next challenge
+      setCurrentIndex(nextIndex);
+      setRevealData(null);
+      setTimerKey(prev => prev + 1); // reset timer
+      setPhase('playing');
+      setTimerRunning(true);
+
+      const nextChallenge = challenges[nextIndex];
+      if (nextChallenge) {
+        analytics.challengeStarted(nextChallenge.id, nextChallenge.set_order, nextChallenge.difficulty);
+      }
+    }
+  }, [challenges, setDate]);
 
   // ── Submit guess ──
   const submitGuess = useCallback(async (guess: 'ai' | 'real' | 'timeout') => {
@@ -123,6 +150,9 @@ export default function Home() {
         context_short: 'Time\'s up! Too slow to decide.',
         ai_prompt: null,
         source_credit: null,
+        photographer_name: null,
+        photographer_url: null,
+        unsplash_url: null,
         guesses_ai: 0,
         guesses_real: 0,
       };
@@ -184,6 +214,9 @@ export default function Home() {
           context_short: data.context_short,
           ai_prompt: data.ai_prompt,
           source_credit: data.source_credit,
+          photographer_name: data.photographer_name,
+          photographer_url: data.photographer_url,
+          unsplash_url: data.unsplash_url,
           guesses_ai: data.guesses_ai,
           guesses_real: data.guesses_real,
         };
@@ -220,35 +253,7 @@ export default function Home() {
     }
 
     submittingRef.current = false;
-  }, [phase, challenges, currentIndex, results]);
-
-  // ── Advance to next challenge or complete ──
-  const advanceToNext = useCallback((currentResults: GuessResult[]) => {
-    const nextIndex = currentResults.length;
-
-    if (nextIndex >= TOTAL_CHALLENGES || nextIndex >= challenges.length) {
-      // Set completed
-      const finalState = completeSet();
-      setStreak(finalState.currentStreak);
-
-      const score = currentResults.filter(r => r.correct).length;
-      analytics.setCompleted(score, finalState.currentStreak, setDate);
-
-      setPhase('completed');
-    } else {
-      // Next challenge
-      setCurrentIndex(nextIndex);
-      setRevealData(null);
-      setTimerKey(prev => prev + 1); // reset timer
-      setPhase('playing');
-      setTimerRunning(true);
-
-      const nextChallenge = challenges[nextIndex];
-      if (nextChallenge) {
-        analytics.challengeStarted(nextChallenge.id, nextChallenge.set_order, nextChallenge.difficulty);
-      }
-    }
-  }, [challenges, setDate]);
+  }, [phase, challenges, currentIndex, results, advanceToNext]);
 
   // ── Timer expired handler ──
   const handleTimerExpire = useCallback(() => {
@@ -337,6 +342,8 @@ export default function Home() {
       <div className="flex-1 relative">
         <SwipeCard
           key={currentChallenge.id}
+          challengeId={currentChallenge.id}
+          difficulty={currentChallenge.difficulty}
           imageUrl={currentChallenge.image_url}
           onSwipe={handleSwipe}
           disabled={phase !== 'playing'}

@@ -43,4 +43,7 @@ export const analytics = {
 
   returningUser: (streak: number, totalSetsPlayed: number) =>
     track('returning_user', { streak, total_sets_played: totalSetsPlayed }),
+
+  investigateUsed: (challengeId: string, difficulty: number) =>
+    track('investigate_used', { challenge_id: challengeId, difficulty }),
 };

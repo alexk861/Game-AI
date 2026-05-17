@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/fetch-unsplash-candidates",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}

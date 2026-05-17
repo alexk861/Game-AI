@@ -63,10 +63,16 @@ export default function RevealOverlay({ data, visible }: RevealOverlayProps) {
             &quot;{data.ai_prompt}&quot;
           </p>
         )}
-        {data.answer === 'real' && data.source_credit && (
-          <p className="mt-2 text-xs text-muted">
-            📷 {data.source_credit}
-          </p>
+        {data.answer === 'real' && (
+          <div className="mt-2 text-xs text-muted">
+            {data.photographer_name && data.photographer_url && data.unsplash_url ? (
+              <span>
+                📷 Photo by <a href={`${data.photographer_url}?utm_source=uncanny_mvp&utm_medium=referral`} target="_blank" rel="noopener noreferrer" className="underline hover:text-white transition-colors">{data.photographer_name}</a> on <a href={`${data.unsplash_url}?utm_source=uncanny_mvp&utm_medium=referral`} target="_blank" rel="noopener noreferrer" className="underline hover:text-white transition-colors">Unsplash</a>
+              </span>
+            ) : data.source_credit ? (
+              <span>📷 {data.source_credit}</span>
+            ) : null}
+          </div>
         )}
       </div>
 

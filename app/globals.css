@@ -22,7 +22,7 @@
   --color-wrong: var(--wrong);
   --color-ai: var(--ai-accent);
   --color-real: var(--real-accent);
-  --font-body: 'Inter', sans-serif;
+  --font-body: 'Space Grotesk', sans-serif;
   --font-mono: 'Roboto Mono', monospace;
 }
 
@@ -180,4 +180,12 @@ html, body {
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Scan Animation ── */
+
+@keyframes scan {
+  0% { top: 0%; }
+  50% { top: 100%; }
+  100% { top: 0%; }
 }
