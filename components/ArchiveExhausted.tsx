@@ -21,8 +21,8 @@ export default function ArchiveExhausted() {
         <section className="relative z-10 w-full max-w-4xl flex flex-col items-center text-center">
           {/* Metadata Header */}
           <div className="w-full flex justify-between items-end mb-8 border-b border-outline-variant pb-2 opacity-60">
-            <span className="font-mono text-[10px] md:text-[12px] uppercase tracking-[0.2em] text-outline">PROTOCOL_NULL | BUFFER_CLEARED</span>
-            <span className="font-mono text-[10px] md:text-[12px] uppercase tracking-[0.2em] text-outline">ID: 882-00-X</span>
+            <span className="font-mono text-[10px] md:text-[12px] uppercase tracking-[0.2em] text-outline">DAILY ARCHIVE UPDATE</span>
+            <span className="font-mono text-[10px] md:text-[12px] uppercase tracking-[0.2em] text-outline">COMPLETED</span>
           </div>
 
           {/* Large Empty Frame with Noise */}
@@ -47,13 +47,13 @@ export default function ArchiveExhausted() {
 
             {/* Subtle Tension Monospaced Text */}
             <div className="absolute bottom-8 w-full flex justify-center">
-              <p className="font-mono text-xs uppercase text-outline tracking-[0.3em] opacity-40 animate-pulse">Something remains unobserved.</p>
+              <p className="font-mono text-xs uppercase text-outline tracking-[0.3em] opacity-40 animate-pulse">Waiting for new data.</p>
             </div>
           </div>
 
           {/* Content Details */}
           <div className="max-w-xl mx-auto">
-            <h2 className="font-sans text-4xl md:text-5xl uppercase tracking-tighter text-on-surface mb-6 font-bold">ARCHIVE_EXHAUSTED</h2>
+            <h2 className="font-sans text-3xl md:text-5xl uppercase tracking-tighter text-on-surface mb-6 font-bold">ALL IMAGES REVIEWED</h2>
             <p className="text-base text-outline-variant mb-12 leading-relaxed">
               Today&apos;s set is complete. The archive will refresh tomorrow.
             </p>
@@ -64,7 +64,7 @@ export default function ArchiveExhausted() {
                 VIEW RECORD
               </Link>
               <Link href="/leaderboard" className="border border-outline-variant px-12 py-4 font-mono text-xs uppercase tracking-[0.2em] text-outline hover:text-on-surface transition-all duration-0 active:scale-95 inline-block">
-                COMPARE OBSERVERS
+                VIEW TODAY'S RESULTS
               </Link>
             </div>
           </div>
