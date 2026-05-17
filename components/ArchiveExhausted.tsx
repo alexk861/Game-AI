@@ -10,7 +10,7 @@ export default function ArchiveExhausted() {
       <div className="grain-overlay" />
       <TopNav />
       
-      <div className="relative min-h-[100dvh] flex flex-col items-center justify-center px-6 md:px-16 pt-24 pb-32">
+      <div className="relative min-h-[100dvh] flex flex-col items-center justify-center px-6 md:px-16 pt-24 pb-48">
         {/* Background Atmospheric Layer */}
         <div className="fixed inset-0 pointer-events-none z-0">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-surface-container-low to-background opacity-40"></div>
@@ -70,17 +70,19 @@ export default function ArchiveExhausted() {
           </div>
           
           {/* Debug Reset Button */}
-          <div className="mt-12 opacity-50 hover:opacity-100 transition-opacity">
-            <button 
-              onClick={() => {
-                localStorage.removeItem('uncanny_state');
-                window.location.reload();
-              }}
-              className="font-mono text-[10px] text-error border border-error/50 px-4 py-2 uppercase tracking-widest"
-            >
-              DEBUG: RESET STATE
-            </button>
-          </div>
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-12 opacity-50 hover:opacity-100 transition-opacity">
+              <button 
+                onClick={() => {
+                  localStorage.removeItem('uncanny_state');
+                  window.location.reload();
+                }}
+                className="font-mono text-[10px] text-error border border-error/50 px-4 py-2 uppercase tracking-widest"
+              >
+                DEBUG: RESET STATE
+              </button>
+            </div>
+          )}
         </section>
       </div>
 

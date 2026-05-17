@@ -1,7 +1,40 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import TopNav from '@/components/TopNav';
 import BottomNav from '@/components/BottomNav';
 
+interface LeaderboardData {
+  total_guesses: number;
+  global_failure_rate: number;
+  most_misleading: {
+    id: string;
+    image_url: string;
+    failure_rate: number;
+    total_guesses: number;
+  } | null;
+}
+
 export default function Leaderboard() {
+  const [data, setData] = useState<LeaderboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/leaderboard')
+      .then(res => res.json())
+      .then(d => {
+        setData(d);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  const failureRateFormatted = data?.global_failure_rate 
+    ? (data.global_failure_rate * 100).toFixed(1) + '%' 
+    : '--%';
+
   return (
     <main className="min-h-[100dvh] bg-background text-on-surface selection:bg-primary selection:text-background flex flex-col">
       {/* Background Layers */}
@@ -17,14 +50,20 @@ export default function Leaderboard() {
           <div>
             <span className="font-mono text-xs text-outline uppercase tracking-[0.2em] mb-2 block">System // Registry</span>
             <h2 className="font-sans text-4xl md:text-5xl font-bold tracking-tighter uppercase leading-none">OBSERVER_INDEX</h2>
+            <div className="mt-4 font-mono text-[10px] text-outline-variant italic">
+              * MVP Simulation based on global aggregate data
+            </div>
           </div>
           <div className="flex flex-col gap-2 md:text-right">
             <div className="font-mono text-xs text-primary flex items-center md:justify-end gap-2">
               <span className="w-2 h-2 bg-primary animate-pulse"></span>
-              DAILY ARCHIVE STATUS: 94% SYNCED
+              DAILY ARCHIVE STATUS: {loading ? 'SYNCING...' : 'SYNCED'}
             </div>
             <div className="font-mono text-xs text-outline">
-              GLOBAL CONSENSUS FAILURE RATE: 42%
+              GLOBAL CONSENSUS FAILURE RATE: {loading ? '--' : failureRateFormatted}
+            </div>
+            <div className="font-mono text-[10px] text-outline-variant">
+              TOTAL ACTIONS RECORDED: {loading ? '--' : data?.total_guesses ?? 0}
             </div>
           </div>
         </section>
@@ -90,11 +129,25 @@ export default function Leaderboard() {
         {/* Narrative Visual Section */}
         <section className="mt-20 grid grid-cols-1 md:grid-cols-2 gap-16">
           <div className="aspect-video border border-outline relative overflow-hidden group">
-            <img 
-              className="w-full h-full object-cover grayscale opacity-50 group-hover:scale-105 transition-transform duration-1000" 
-              alt="Satellite network array floating in deep space" 
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPRGk9rEkRcqSZP9dpqle6PpCLvtU1j8H69Q5EE_0Pj7Xnh2ZdxUxhnGgo41e9OgCPme3NK3OwzA_tBh52B6hEfJdc9XGadjBudF057FPmyd7pVkGUHWGueCm4YGdg9ieDJHopIDy1qQ0uYoMWQd0r_ZaARlK-BkgjBORohbLubnJ-r0UrnCcwsJZiFag9nTgojx6366p2OvfdyhXzcg-p7ncXsSvIukN_WpDg8aSwEcLgiru9VQegbSYMlNLZFhx2-C-CQcnojbap"
-            />
+            {data?.most_misleading ? (
+              <>
+                <img 
+                  className="w-full h-full object-cover grayscale opacity-50 group-hover:scale-105 transition-transform duration-1000" 
+                  alt="Most misleading challenge" 
+                  src={data.most_misleading.image_url}
+                />
+                <div className="absolute inset-0 bg-error/10 mix-blend-overlay"></div>
+                <div className="absolute top-4 right-4 bg-background/80 px-2 py-1 font-mono text-[10px] text-error uppercase border border-error/50">
+                  {(data.most_misleading.failure_rate * 100).toFixed(1)}% FAILURE
+                </div>
+              </>
+            ) : (
+              <img 
+                className="w-full h-full object-cover grayscale opacity-50 group-hover:scale-105 transition-transform duration-1000" 
+                alt="Satellite network array floating in deep space" 
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPRGk9rEkRcqSZP9dpqle6PpCLvtU1j8H69Q5EE_0Pj7Xnh2ZdxUxhnGgo41e9OgCPme3NK3OwzA_tBh52B6hEfJdc9XGadjBudF057FPmyd7pVkGUHWGueCm4YGdg9ieDJHopIDy1qQ0uYoMWQd0r_ZaARlK-BkgjBORohbLubnJ-r0UrnCcwsJZiFag9nTgojx6366p2OvfdyhXzcg-p7ncXsSvIukN_WpDg8aSwEcLgiru9VQegbSYMlNLZFhx2-C-CQcnojbap"
+              />
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>
             <div className="absolute bottom-4 left-4 font-mono text-[10px] text-primary tracking-[0.2em] uppercase">Visual Cluster // Node 04</div>
           </div>

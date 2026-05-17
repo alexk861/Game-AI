@@ -1,6 +1,7 @@
 'use client';
 
 import { copy } from '@/lib/copy';
+import TopNav from '@/components/TopNav';
 
 interface WelcomeScreenProps {
   onBegin: () => void;
@@ -10,8 +11,9 @@ export default function WelcomeScreen({ onBegin }: WelcomeScreenProps) {
   return (
     <main className="min-h-[100dvh] overflow-hidden bg-background text-foreground cinematic-bg">
       <div className="noise-overlay" />
+      <TopNav />
       <section className="relative z-10 flex min-h-[100dvh] flex-col justify-end px-6 pb-[calc(env(safe-area-inset-bottom)+3rem)] pt-[env(safe-area-inset-top)]">
-        <div className="mb-auto pt-8 font-mono text-[10px] uppercase tracking-[0.24em] text-muted/45">
+        <div className="mb-auto pt-32 font-mono text-[10px] uppercase tracking-[0.24em] text-muted/45">
           {copy.onboarding.label}
         </div>
 
@@ -25,7 +27,7 @@ export default function WelcomeScreen({ onBegin }: WelcomeScreenProps) {
           <button
             type="button"
             onClick={onBegin}
-            className="mt-10 w-full border border-outline bg-foreground px-5 py-5 text-left text-background transition-colors active:translate-y-px"
+            className="mt-10 w-full border border-outline bg-foreground px-5 py-5 text-left text-background transition-colors active:translate-y-px hover:bg-primary/90"
           >
             <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-background/65">
               {copy.onboarding.ctaKicker}

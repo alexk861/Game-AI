@@ -13,13 +13,17 @@ export default function TopNav({ status }: TopNavProps) {
         <span className="material-symbols-outlined text-primary group-hover:opacity-80 transition-opacity" style={{ fontVariationSettings: "'wght' 200" }}>fingerprint</span>
         <h1 className="font-sans text-2xl md:text-5xl font-bold text-primary uppercase tracking-[0.2em] leading-none">UNCANNY</h1>
       </Link>
-      <div className="hidden md:flex gap-8 items-center">
+      <div className="flex gap-6 md:gap-8 items-center">
         {status ? (
-           <div className="font-mono text-xs text-outline uppercase tracking-[0.1em]">{status}</div>
+           <div className="font-mono text-[10px] md:text-xs text-outline uppercase tracking-[0.1em]">{status}</div>
         ) : (
           <>
-            <div className="font-mono text-xs uppercase text-outline tracking-[0.1em]">PROTOCOL</div>
-            <div className="font-mono text-xs uppercase text-outline tracking-[0.1em]">ACCESS_POINT</div>
+            <Link href="/profile" className="font-mono text-[10px] md:text-xs uppercase text-outline hover:text-on-surface tracking-[0.1em] transition-colors">
+              RECORD
+            </Link>
+            <Link href="/leaderboard" className="font-mono text-[10px] md:text-xs uppercase text-outline hover:text-on-surface tracking-[0.1em] transition-colors">
+              INDEX
+            </Link>
           </>
         )}
       </div>
