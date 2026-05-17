@@ -41,7 +41,7 @@ export default function Profile() {
     : '0';
 
   return (
-    <main className="min-h-[100dvh] bg-background text-on-surface selection:bg-on-surface selection:text-background flex flex-col">
+    <main className="h-[100dvh] overflow-y-auto bg-background text-on-surface selection:bg-on-surface selection:text-background flex flex-col">
       <div className="grain-overlay"></div>
       
       {/* Background Visual */}

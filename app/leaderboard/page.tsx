@@ -36,7 +36,7 @@ export default function Leaderboard() {
     : '--%';
 
   return (
-    <main className="min-h-[100dvh] bg-background text-on-surface selection:bg-primary selection:text-background flex flex-col">
+    <main className="h-[100dvh] overflow-y-auto bg-background text-on-surface selection:bg-primary selection:text-background flex flex-col">
       {/* Background Layers */}
       <div className="grain-overlay pointer-events-none z-0"></div>
       <div className="scanline-overlay pointer-events-none z-0"></div>

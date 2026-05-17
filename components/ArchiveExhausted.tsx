@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 export default function ArchiveExhausted() {
   return (
-    <main className="min-h-[100dvh] bg-background text-on-surface cinematic-bg selection:bg-on-surface selection:text-background flex flex-col">
+    <main className="h-[100dvh] overflow-y-auto bg-background text-on-surface cinematic-bg selection:bg-on-surface selection:text-background flex flex-col">
       <div className="grain-overlay" />
       <TopNav />
       
@@ -70,19 +70,17 @@ export default function ArchiveExhausted() {
           </div>
           
           {/* Debug Reset Button */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-12 opacity-50 hover:opacity-100 transition-opacity">
-              <button 
-                onClick={() => {
-                  localStorage.removeItem('uncanny_state');
-                  window.location.reload();
-                }}
-                className="font-mono text-[10px] text-error border border-error/50 px-4 py-2 uppercase tracking-widest"
-              >
-                DEBUG: RESET STATE
-              </button>
-            </div>
-          )}
+          <div className="mt-12 opacity-50 hover:opacity-100 transition-opacity pb-24">
+            <button 
+              onClick={() => {
+                localStorage.removeItem('uncanny_state');
+                window.location.reload();
+              }}
+              className="font-mono text-[10px] text-error border border-error/50 px-4 py-2 uppercase tracking-widest"
+            >
+              DEBUG: RESET STATE
+            </button>
+          </div>
         </section>
       </div>
 
