@@ -71,16 +71,21 @@ export default function ResultsDebrief({ results, challenges, streak, setDate, c
         </div>
 
         <div className="mt-9 md:mt-10">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted/50">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted/50 mb-4">
             {copy.results.metric}
           </div>
-          <div className="mt-2 flex items-end gap-3">
-            <span className="text-[4.5rem] font-normal leading-none tracking-normal sm:text-[5rem] lg:text-[5.5rem]">{perceptionPercent}</span>
-            <span className="pb-2 text-xl text-muted/70 sm:pb-3 sm:text-2xl">%</span>
+          <div className="mt-2 flex flex-col gap-6 border-l-2 border-outline-variant pl-6 py-2">
+            <p className="max-w-sm text-xl sm:text-2xl leading-snug text-on-surface font-semibold italic">
+              &quot;{resultReflection(score)}&quot;
+            </p>
+            <div className="flex items-center gap-4">
+              <div className="font-mono text-xs uppercase text-outline tracking-widest">Confidence Index:</div>
+              <div className="flex items-end gap-1">
+                <span className="text-2xl font-mono text-outline leading-none">{perceptionPercent}</span>
+                <span className="pb-0.5 text-sm font-mono text-muted/40">%</span>
+              </div>
+            </div>
           </div>
-          <p className="mt-5 max-w-sm text-base leading-snug text-muted/88 sm:text-lg">
-            {resultReflection(score)}
-          </p>
         </div>
 
         <div className="mt-8 border-l border-outline/70 pl-4">

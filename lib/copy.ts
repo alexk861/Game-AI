@@ -30,12 +30,12 @@ export const copy = {
 
   investigation: {
     fragments: [
-      'EXIF: unknown',
-      'reverse search failed',
-      'compression looks unusual',
-      'details do not settle',
-      'observers disagreed',
-      'look again',
+      'EXIF: missing local timestamp',
+      'compression seams detected',
+      'reverse-search: REDACTED',
+      'lighting anomaly in upper quadrant',
+      'observer consensus breaking',
+      'look closer',
     ],
   },
 
@@ -72,12 +72,12 @@ export const copy = {
     markLabel: 'result',
     unavailable: 'unavailable',
     reflections: [
-      'You were fooled often.',
-      'Your instincts hesitated.',
-      'You caught some clues.',
-      'You were hard to fool.',
-      'Most of your instincts held.',
-      'You read the set unusually well.',
+      'Human certainty collapsed.',
+      'You trusted the wrong surfaces.',
+      'Observer confidence degraded during analysis.',
+      'You hesitated unusually long on organic patterns.',
+      'Your perception remained mostly stable.',
+      'You successfully isolated the anomalies.',
     ],
     mark: (result: GuessResult) => {
       if (result.guess === 'timeout') return 'skipped';

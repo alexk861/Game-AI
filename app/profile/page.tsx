@@ -1,7 +1,27 @@
+'use client';
+
 import TopNav from '@/components/TopNav';
 import BottomNav from '@/components/BottomNav';
+import { useMemo } from 'react';
 
 export default function Profile() {
+  const profileObservation = useMemo(() => {
+    const observations = [
+      "Tendency to over-classify as AI in low-light scenarios. Subject exhibits heightened suspicion towards biological imperfections.",
+      "Distrusts symmetrical faces. Organic textures caused measurable hesitation during rapid-fire analysis.",
+      "Over-trusts artificial lighting. Confidence degrades significantly after prolonged observation periods.",
+      "Pattern-seeking behavior detected. Subject frequently misinterprets organic noise as generative artifacts."
+    ];
+    const tags = [
+      ["Hyper-vigilant", "Static-sensitive", "Pattern-seeking"],
+      ["Symmetry-averse", "Organic-hesitant", "Fatigue-prone"],
+      ["Lighting-biased", "Confidence-degrading", "Surface-trusting"]
+    ];
+    const randIndex = Math.floor(Math.random() * observations.length);
+    const tagIndex = Math.floor(Math.random() * tags.length);
+    return { text: observations[randIndex], tags: tags[tagIndex] };
+  }, []);
+
   return (
     <main className="min-h-[100dvh] bg-background text-on-surface selection:bg-on-surface selection:text-background flex flex-col">
       <div className="grain-overlay"></div>
@@ -23,12 +43,12 @@ export default function Profile() {
         <section className="mb-20">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-outline pb-8">
             <div>
-              <p className="font-mono text-xs text-outline mb-2">OBSERVER RECORD</p>
+              <p className="font-mono text-xs text-outline mb-2">CLINICAL ASSESSMENT</p>
               <h2 className="font-sans text-4xl md:text-5xl font-bold uppercase tracking-tighter">OBSERVER_884-A</h2>
             </div>
             <div className="font-mono text-xs text-outline flex gap-4">
               <span>ST-556 / REDACTED</span>
-              <span>ACTIVE SIGNAL</span>
+              <span className="text-primary animate-pulse">ACTIVE SIGNAL</span>
             </div>
           </div>
         </section>
@@ -54,19 +74,20 @@ export default function Profile() {
 
         {/* Section 2: Behavioral Profile */}
         <section className="mb-20">
-          <div className="border border-outline p-8 md:p-12">
-            <div className="flex items-center gap-4 mb-8">
+          <div className="border border-outline p-8 md:p-12 relative overflow-hidden">
+            <div className="absolute inset-0 scanline-overlay opacity-30 pointer-events-none"></div>
+            <div className="flex items-center gap-4 mb-8 relative z-10">
               <span className="material-symbols-outlined text-primary">psychology</span>
               <h3 className="font-sans text-2xl font-bold uppercase tracking-tight">BEHAVIORAL PROFILE</h3>
             </div>
-            <div className="space-y-6">
+            <div className="space-y-6 relative z-10">
               <p className="text-lg md:text-xl leading-relaxed text-on-surface-variant italic">
-                &quot;Tendency to over-classify as AI in low-light scenarios. Sensory bias detected. Subject exhibits heightened suspicion towards biological imperfections, often misinterpreting organic textures as generative noise.&quot;
+                &quot;{profileObservation.text}&quot;
               </p>
               <div className="pt-6 border-t border-outline-variant flex flex-wrap gap-4">
-                <span className="px-4 py-1 border border-outline-variant font-mono text-[10px] uppercase">Hyper-vigilant</span>
-                <span className="px-4 py-1 border border-outline-variant font-mono text-[10px] uppercase">Static-sensitive</span>
-                <span className="px-4 py-1 border border-outline-variant font-mono text-[10px] uppercase">Pattern-seeking</span>
+                {profileObservation.tags.map(tag => (
+                  <span key={tag} className="px-4 py-1 border border-outline-variant font-mono text-[10px] uppercase text-outline">{tag}</span>
+                ))}
               </div>
             </div>
           </div>

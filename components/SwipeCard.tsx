@@ -149,14 +149,14 @@ export default function SwipeCard({
         <img
           src={imageUrl}
           alt="Unresolved visual record"
-          className="absolute inset-0 h-full w-full select-none object-cover transition-all duration-500 ease-out"
+          className={`absolute inset-0 h-full w-full select-none object-cover transition-all duration-500 ease-out micro-flicker ${isInvestigating ? '' : 'image-breathe chromatic-drift'}`}
           draggable={false}
           onError={() => setImageErrored(true)}
           style={{
             filter: isInvestigating
               ? 'contrast(122%) brightness(78%) saturate(64%) blur(0.15px)'
-              : 'contrast(103%) brightness(88%) saturate(82%)',
-            transform: isInvestigating ? 'scale(1.095)' : 'scale(1.018)',
+              : '',
+            transform: isInvestigating ? 'scale(1.095)' : '',
           }}
         />
 
