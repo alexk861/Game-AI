@@ -8,8 +8,12 @@ const getToday = (): string => {
 
 const defaultState: UncannyStorage = {
   todayDate: '',
+  todayStarted: false,
+  todayStartedAt: null,
   todayResults: [],
   todayCompleted: false,
+  todayCompletedAt: null,
+  todayCompletionMs: null,
   currentStreak: 0,
   lastPlayedDate: '',
   bestStreak: 0,
@@ -23,7 +27,10 @@ export function getStorage(): UncannyStorage {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultState;
-    return JSON.parse(raw) as UncannyStorage;
+    return {
+      ...defaultState,
+      ...JSON.parse(raw),
+    } as UncannyStorage;
   } catch {
     return defaultState;
   }
@@ -56,9 +63,25 @@ export function initTodaySession(): UncannyStorage {
   const newState: UncannyStorage = {
     ...state,
     todayDate: today,
+    todayStarted: false,
+    todayStartedAt: null,
     todayResults: [],
     todayCompleted: false,
+    todayCompletedAt: null,
+    todayCompletionMs: null,
     currentStreak: newStreak,
+  };
+
+  saveStorage(newState);
+  return newState;
+}
+
+export function markTodayStarted(): UncannyStorage {
+  const state = initTodaySession();
+  const newState: UncannyStorage = {
+    ...state,
+    todayStarted: true,
+    todayStartedAt: state.todayStartedAt ?? Date.now(),
   };
 
   saveStorage(newState);
@@ -67,6 +90,8 @@ export function initTodaySession(): UncannyStorage {
 
 export function addResult(result: GuessResult): UncannyStorage {
   const state = getStorage();
+  state.todayStarted = true;
+  state.todayStartedAt = state.todayStartedAt ?? Date.now();
   state.todayResults = [...state.todayResults, result];
 
   if (result.correct) {
@@ -77,12 +102,21 @@ export function addResult(result: GuessResult): UncannyStorage {
   return state;
 }
 
-export function completeSet(): UncannyStorage {
+export function completeSet(completedAt = Date.now()): UncannyStorage {
   const state = getStorage();
   const today = getToday();
 
+  if (state.todayDate === today && state.todayCompleted) {
+    return state;
+  }
+
+  state.todayStarted = true;
+  state.todayStartedAt = state.todayStartedAt ?? completedAt;
   state.todayCompleted = true;
+  state.todayCompletedAt = completedAt;
+  state.todayCompletionMs = Math.max(0, completedAt - state.todayStartedAt);
   state.totalSetsPlayed += 1;
+  const previousLastPlayedDate = state.lastPlayedDate;
   state.lastPlayedDate = today;
 
   // Update streak
@@ -91,7 +125,7 @@ export function completeSet(): UncannyStorage {
   const yesterdayStr = yesterday.toISOString().split('T')[0];
 
   // If played yesterday or just started, increment streak
-  if (state.currentStreak === 0 || state.lastPlayedDate === yesterdayStr || state.lastPlayedDate === today) {
+  if (state.currentStreak === 0 || previousLastPlayedDate === yesterdayStr || previousLastPlayedDate === today) {
     state.currentStreak += 1;
   }
 
@@ -112,6 +146,12 @@ export function hasCompletedToday(): boolean {
   const state = getStorage();
   const today = getToday();
   return state.todayDate === today && state.todayCompleted;
+}
+
+export function hasStartedToday(): boolean {
+  const state = getStorage();
+  const today = getToday();
+  return state.todayDate === today && (state.todayStarted || state.todayResults.length > 0 || state.todayCompleted);
 }
 
 export function getResumeIndex(): number {

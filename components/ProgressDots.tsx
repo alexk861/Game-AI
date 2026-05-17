@@ -14,10 +14,10 @@ export default function ProgressDots({ total, current, results }: ProgressDotsPr
         const isCurrent = i === current;
         const isPast = result !== null && result !== undefined;
 
-        let dotColor = 'bg-white/20'; // future
-        if (isPast && result.correct) dotColor = 'bg-correct';
-        if (isPast && !result.correct) dotColor = 'bg-wrong';
-        if (isCurrent && !isPast) dotColor = 'bg-white';
+        let dotColor = 'bg-muted/20';
+        if (isPast && result.correct) dotColor = 'bg-muted';
+        if (isPast && !result.correct) dotColor = 'bg-ai';
+        if (isCurrent && !isPast) dotColor = 'bg-outline';
 
         return (
           <div

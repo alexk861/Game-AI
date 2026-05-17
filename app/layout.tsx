@@ -6,19 +6,19 @@ const GA_ID = process.env.NEXT_PUBLIC_GA_ID || '';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://uncanny.app'),
-  title: 'Uncanny — Daily Reality Check',
-  description: '5 images. AI or Real? Can you trust your eyes?',
+  title: 'UNCANNY / Daily Perception Record',
+  description: 'Five unresolved images. Decide what can be trusted.',
   openGraph: {
-    title: 'Uncanny — Daily Reality Check',
-    description: '5 images. AI or Real? Can you trust your eyes?',
+    title: 'UNCANNY / Daily Perception Record',
+    description: 'Five unresolved images. Decide what can be trusted.',
     images: ['/og-image.png'],
     type: 'website',
     url: 'https://uncanny.app',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Uncanny — Daily Reality Check',
-    description: '5 images. AI or Real? Can you trust your eyes?',
+    title: 'UNCANNY / Daily Perception Record',
+    description: 'Five unresolved images. Decide what can be trusted.',
     images: ['/og-image.png'],
   },
   icons: {
@@ -52,7 +52,6 @@ export default function RootLayout({
       <body className="bg-background text-foreground font-body antialiased">
         {children}
 
-        {/* GA4 */}
         {GA_ID && (
           <>
             <Script

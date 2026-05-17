@@ -13,10 +13,13 @@ export default function Timer({ duration, running, onExpire }: TimerProps) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const expiredRef = useRef(false);
 
-  // Reset when duration changes (new challenge)
   useEffect(() => {
-    setTimeLeft(duration);
-    expiredRef.current = false;
+    const resetId = setTimeout(() => {
+      setTimeLeft(duration);
+      expiredRef.current = false;
+    }, 0);
+
+    return () => clearTimeout(resetId);
   }, [duration]);
 
   useEffect(() => {
@@ -51,8 +54,8 @@ export default function Timer({ duration, running, onExpire }: TimerProps) {
         style={{
           width: `${percentage}%`,
           transitionDuration: '100ms',
-          backgroundColor: isUrgent ? 'var(--wrong)' : 'var(--text)',
-          boxShadow: isUrgent ? '0 0 8px var(--wrong)' : 'none',
+          backgroundColor: isUrgent ? 'var(--wrong)' : 'var(--outline)',
+          boxShadow: 'none',
         }}
       />
     </div>

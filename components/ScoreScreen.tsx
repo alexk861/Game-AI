@@ -2,6 +2,7 @@
 
 import type { GuessResult } from '@/lib/types';
 import { analytics } from '@/lib/analytics';
+import { copy, resultReflection } from '@/lib/copy';
 
 interface ScoreScreenProps {
   results: GuessResult[];
@@ -9,27 +10,18 @@ interface ScoreScreenProps {
   setDate: string;
 }
 
-const SCORE_MESSAGES: Record<number, string> = {
-  5: 'Flawless. You can\'t be fooled.',
-  4: 'Sharp eyes. Almost perfect.',
-  3: 'Not bad. Reality is tricky.',
-  2: 'The machines are winning.',
-  1: 'You got played.',
-  0: 'AI owns your perception.',
-};
-
 export default function ScoreScreen({ results, streak, setDate }: ScoreScreenProps) {
   const score = results.filter(r => r.correct).length;
-  const message = SCORE_MESSAGES[score] || 'How did you do?';
+  const message = resultReflection(score);
 
-  const emojiStrip = results
+  const shareMarks = results
     .map(r => {
-      if (r.guess === 'timeout') return '⬛';
-      return r.correct ? '🟩' : '🟥';
+      if (r.guess === 'timeout') return '0';
+      return r.correct ? '1' : 'x';
     })
     .join('');
 
-  const shareText = `Uncanny — Daily Reality Check\n🤖${emojiStrip} ${score}/5\nDay ${streak} 🔥\nCan you spot the fakes?\nhttps://uncanny.app`;
+  const shareText = `UNCANNY / OBSERVER FILE\n${shareMarks} ${score}/5\nrecurrence ${streak}\nhttps://game-ai-one.vercel.app`;
 
   const handleShare = async () => {
     const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
@@ -39,72 +31,88 @@ export default function ScoreScreen({ results, streak, setDate }: ScoreScreenPro
     if (canShare) {
       try {
         await navigator.share({
-          title: 'Uncanny — Daily Reality Check',
+          title: 'UNCANNY / DAILY RECORD',
           text: shareText,
         });
       } catch {
-        // User cancelled share
+        // User cancelled share.
       }
     } else {
       await navigator.clipboard.writeText(shareText);
       const btn = document.getElementById('share-btn');
       if (btn) {
-        btn.textContent = 'COPIED';
-        setTimeout(() => { btn.textContent = 'SHARE MY SCORE'; }, 2000);
+        btn.textContent = copy.cta.exported;
+        setTimeout(() => { btn.textContent = copy.cta.export; }, 2000);
       }
     }
   };
 
+  const handleRestartTest = () => {
+    localStorage.removeItem('uncanny_state');
+    window.location.reload();
+  };
+
   return (
-    <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-background px-6">
-      <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted mb-6 fade-in">
-        Reality Score
-      </div>
+    <div className="absolute inset-0 z-40 flex flex-col items-center justify-center archive-bg px-6">
+      <div className="noise-overlay opacity-[0.08]" />
 
-      <div className="score-reveal">
-        <div className="text-7xl font-bold font-mono tracking-tight">
-          {score}<span className="text-3xl text-muted">/5</span>
+      <div className="archive-panel p-8 flex flex-col items-center w-full max-w-sm">
+        <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted/60 mb-7 fade-in">
+          {copy.results.label}
         </div>
-      </div>
 
-      <p className="mt-4 text-lg text-white/70 text-center max-w-xs fade-in" style={{ animationDelay: '0.3s' }}>
-        {message}
-      </p>
-
-      <div className="flex gap-3 mt-8 fade-in" style={{ animationDelay: '0.5s' }}>
-        {results.map((r, i) => (
-          <div
-            key={i}
-            className={`w-10 h-10 flex items-center justify-center text-lg font-bold ${
-              r.guess === 'timeout'
-                ? 'bg-white/10 text-muted'
-                : r.correct
-                  ? 'bg-correct/20 text-correct border border-correct/30'
-                  : 'bg-wrong/20 text-wrong border border-wrong/30'
-            }`}
-          >
-            {r.guess === 'timeout' ? '–' : r.correct ? '✓' : '✗'}
+        <div className="score-reveal">
+          <div className="text-6xl font-normal font-mono tracking-normal">
+            {score}<span className="text-2xl text-muted/60">/5</span>
           </div>
-        ))}
-      </div>
-
-      {streak > 0 && (
-        <div className="mt-6 text-sm font-mono text-muted fade-in" style={{ animationDelay: '0.7s' }}>
-          🔥 Day {streak} Streak
         </div>
-      )}
 
-      <button
-        id="share-btn"
-        onClick={handleShare}
-        className="btn-ghost mt-10 px-10 py-4 fade-in"
-        style={{ animationDelay: '0.9s' }}
-      >
-        Share My Score
-      </button>
+        <p className="mt-5 text-sm text-muted text-center max-w-xs fade-in leading-relaxed" style={{ animationDelay: '0.3s' }}>
+          {message}
+        </p>
+
+        <div className="flex gap-2 mt-8 fade-in" style={{ animationDelay: '0.5s' }}>
+          {results.map((r, i) => (
+            <div
+              key={i}
+              className={`w-10 h-10 flex items-center justify-center text-xs font-mono border ${
+                r.guess === 'timeout'
+                  ? 'border-outline-variant bg-surface-container text-muted/50'
+                  : r.correct
+                    ? 'border-outline text-muted bg-surface'
+                    : 'border-ai text-ai bg-ai/10'
+              }`}
+            >
+              {r.guess === 'timeout' ? '0' : r.correct ? '1' : 'x'}
+            </div>
+          ))}
+        </div>
+
+        {streak > 0 && (
+          <div className="mt-6 text-[10px] font-mono text-muted/55 uppercase tracking-[0.16em] fade-in" style={{ animationDelay: '0.7s' }}>
+            {copy.results.recurrence(streak)}
+          </div>
+        )}
+
+        <div className="mt-10 flex flex-col gap-3 fade-in" style={{ animationDelay: '0.9s' }}>
+          <button
+            id="share-btn"
+            onClick={handleShare}
+            className="btn-ghost px-10 py-4 border-outline-variant"
+          >
+            {copy.cta.export}
+          </button>
+          <button
+            onClick={handleRestartTest}
+            className="btn-ghost px-10 py-3 border-ai/50 text-ai"
+          >
+            {copy.cta.restart}
+          </button>
+        </div>
+      </div>
 
       <div className="absolute bottom-6 text-[10px] text-muted/40 font-mono uppercase tracking-[0.15em] fade-in" style={{ animationDelay: '1.1s' }}>
-        {setDate} · uncanny.app
+        {setDate} / uncanny.app
       </div>
     </div>
   );

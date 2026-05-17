@@ -1,0 +1,223 @@
+import { spawn } from 'node:child_process';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+
+const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const outputDir = join(process.cwd(), 'verification-screenshots');
+const userDataDir = join('C:\\tmp', `uncanny-cdp-${Date.now()}`);
+const port = 9223;
+const baseUrl = 'https://game-ai-one.vercel.app/';
+
+await mkdir(outputDir, { recursive: true });
+await rm(userDataDir, { recursive: true, force: true });
+
+const chrome = spawn(chromePath, [
+  '--headless=new',
+  `--remote-debugging-port=${port}`,
+  `--user-data-dir=${userDataDir}`,
+  '--disable-gpu',
+  '--hide-scrollbars',
+  '--no-first-run',
+  '--window-size=390,844',
+  'about:blank',
+], { stdio: 'ignore' });
+
+let messageId = 0;
+const pending = new Map();
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fetchJson(url, retries = 60) {
+  for (let i = 0; i < retries; i += 1) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) return response.json();
+    } catch {
+      await delay(250);
+    }
+  }
+  throw new Error(`Unable to fetch ${url}`);
+}
+
+const targets = await fetchJson(`http://127.0.0.1:${port}/json/list`);
+const pageTarget = targets.find(target => target.type === 'page');
+if (!pageTarget?.webSocketDebuggerUrl) {
+  throw new Error('Unable to find a Chrome page target');
+}
+
+const ws = new WebSocket(pageTarget.webSocketDebuggerUrl);
+
+await new Promise((resolve, reject) => {
+  ws.addEventListener('open', resolve, { once: true });
+  ws.addEventListener('error', reject, { once: true });
+});
+
+ws.addEventListener('message', event => {
+  const payload = JSON.parse(event.data);
+  if (payload.id && pending.has(payload.id)) {
+    const { resolve, reject } = pending.get(payload.id);
+    pending.delete(payload.id);
+    if (payload.error) reject(new Error(payload.error.message));
+    else resolve(payload.result);
+  }
+});
+
+function send(method, params = {}) {
+  const id = ++messageId;
+  ws.send(JSON.stringify({ id, method, params }));
+  return new Promise((resolve, reject) => {
+    pending.set(id, { resolve, reject });
+  });
+}
+
+async function evaluate(expression) {
+  const result = await send('Runtime.evaluate', {
+    expression,
+    awaitPromise: true,
+    returnByValue: true,
+  });
+  return result.result?.value;
+}
+
+async function waitFor(expression, timeout = 12000) {
+  const started = Date.now();
+  while (Date.now() - started < timeout) {
+    if (await evaluate(expression)) return;
+    await delay(250);
+  }
+  throw new Error(`Timed out waiting for ${expression}`);
+}
+
+async function setViewport(width, height) {
+  await send('Emulation.setDeviceMetricsOverride', {
+    width,
+    height,
+    deviceScaleFactor: 1,
+    mobile: true,
+  });
+}
+
+async function navigateFresh() {
+  await send('Page.navigate', { url: baseUrl });
+  await waitFor('document.readyState === "complete"');
+}
+
+async function screenshot(name) {
+  await delay(350);
+  const shot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
+  await writeFile(join(outputDir, name), Buffer.from(shot.data, 'base64'));
+}
+
+async function clickButtonContaining(text) {
+  const clicked = await evaluate(`
+    (() => {
+      const button = [...document.querySelectorAll('button')]
+        .find(item => item.innerText.toLowerCase().includes(${JSON.stringify(text.toLowerCase())}));
+      if (!button) return false;
+      button.click();
+      return true;
+    })()
+  `);
+  if (!clicked) throw new Error(`Button not found: ${text}`);
+}
+
+async function waitForHeroImage() {
+  await waitFor(`
+    (() => {
+      const image = document.querySelector('.swipe-card img');
+      return Boolean(image && image.complete && image.naturalWidth > 0);
+    })()
+  `, 15000);
+  await delay(500);
+}
+
+async function holdImage() {
+  await evaluate(`
+    (() => {
+      const target = document.querySelector('.swipe-card');
+      if (!target) return false;
+      const rect = target.getBoundingClientRect();
+      target.dispatchEvent(new PointerEvent('pointerdown', {
+        bubbles: true,
+        pointerId: 1,
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.top + rect.height / 2,
+        pointerType: 'touch'
+      }));
+      return true;
+    })()
+  `);
+  await delay(780);
+}
+
+async function releaseImage() {
+  await evaluate(`
+    (() => {
+      const target = document.querySelector('.swipe-card');
+      if (!target) return false;
+      const rect = target.getBoundingClientRect();
+      target.dispatchEvent(new PointerEvent('pointerup', {
+        bubbles: true,
+        pointerId: 1,
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.top + rect.height / 2,
+        pointerType: 'touch'
+      }));
+      return true;
+    })()
+  `);
+}
+
+try {
+  await send('Page.enable');
+  await send('Runtime.enable');
+  await setViewport(390, 844);
+  await navigateFresh();
+  await evaluate('localStorage.removeItem("uncanny_state")');
+  await navigateFresh();
+  await waitFor('document.body.innerText.includes("UNCANNY")');
+  await screenshot('01-welcome-390x844.png');
+
+  await clickButtonContaining('enter');
+  await waitFor('document.body.innerText.includes("Real") && document.body.innerText.includes("AI")');
+  await waitForHeroImage();
+  await screenshot('02-gameplay-390x844.png');
+
+  await setViewport(430, 932);
+  await delay(700);
+  await screenshot('06-gameplay-430x932.png');
+  await setViewport(390, 844);
+  await delay(400);
+
+  await holdImage();
+  await waitFor('document.body.innerText.includes("EXIF") || document.body.innerText.includes("compression anomaly")');
+  await screenshot('03-investigation-390x844.png');
+  await releaseImage();
+
+  await clickButtonContaining('AI');
+  await waitFor('document.body.innerText.includes("This image is")');
+  await screenshot('04-reveal-390x844.png');
+
+  for (let i = 0; i < 4; i += 1) {
+    await waitFor('document.body.innerText.includes("Real") && document.body.innerText.includes("AI")', 15000);
+    await waitForHeroImage();
+    await clickButtonContaining(i % 2 === 0 ? 'Real' : 'AI');
+    await waitFor('document.body.innerText.includes("This image is")', 15000);
+  }
+
+  await waitFor('document.body.innerText.toLowerCase().includes("debrief") && document.body.innerText.includes("Share record")', 16000);
+  await screenshot('05-results-390x844.png');
+  await navigateFresh();
+  await waitFor('document.body.innerText.toLowerCase().includes("debrief") && document.body.innerText.includes("Share record")', 16000);
+  await screenshot('07-reload-completed-390x844.png');
+
+  console.log(`Saved screenshots to ${outputDir}`);
+} finally {
+  ws.close();
+  chrome.kill();
+  await new Promise(resolve => chrome.once('exit', resolve));
+  await delay(300);
+  await rm(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+}

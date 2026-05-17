@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 
 interface Candidate {
@@ -35,25 +35,7 @@ export default function AdminCandidatesPage() {
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Check local storage and URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlSecret = urlParams.get('secret');
-    const localSecret = localStorage.getItem('adminSecret');
-
-    if (urlSecret) {
-      setSecret(urlSecret);
-      localStorage.setItem('adminSecret', urlSecret);
-      fetchData(urlSecret);
-    } else if (localSecret) {
-      setSecret(localSecret);
-      fetchData(localSecret);
-    } else {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchData = async (authSecret: string) => {
+  const fetchData = useCallback(async (authSecret: string) => {
     setLoading(true);
     setError('');
     try {
@@ -73,12 +55,33 @@ export default function AdminCandidatesPage() {
         setError('Invalid secret or unauthorized.');
         localStorage.removeItem('adminSecret');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to fetch candidates.');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const initId = setTimeout(() => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlSecret = urlParams.get('secret');
+      const localSecret = localStorage.getItem('adminSecret');
+
+      if (urlSecret) {
+        setSecret(urlSecret);
+        localStorage.setItem('adminSecret', urlSecret);
+        fetchData(urlSecret);
+      } else if (localSecret) {
+        setSecret(localSecret);
+        fetchData(localSecret);
+      } else {
+        setLoading(false);
+      }
+    }, 0);
+
+    return () => clearTimeout(initId);
+  }, [fetchData]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,7 +192,7 @@ export default function AdminCandidatesPage() {
 
         {candidates.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-12 text-center text-gray-500">
-            No candidates pending review. Great job!
+            No candidates pending review.
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

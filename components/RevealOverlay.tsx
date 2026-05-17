@@ -1,6 +1,7 @@
 'use client';
 
 import type { RevealData } from '@/lib/types';
+import { copy, revealConsensus, revealOrigin } from '@/lib/copy';
 
 interface RevealOverlayProps {
   data: RevealData;
@@ -10,78 +11,60 @@ interface RevealOverlayProps {
 export default function RevealOverlay({ data, visible }: RevealOverlayProps) {
   if (!visible) return null;
 
-  const isCorrect = data.correct;
-  const totalGuesses = data.guesses_ai + data.guesses_real;
-  const fooledPercent = totalGuesses > 0
-    ? Math.round(
-        (data.answer === 'ai'
-          ? (data.guesses_real / totalGuesses) * 100
-          : (data.guesses_ai / totalGuesses) * 100)
-      )
-    : 0;
+  const answerLabel = data.answer === 'ai'
+    ? copy.reveal.ai
+    : copy.reveal.real;
+  const verdictLabel = data.correct
+    ? copy.reveal.correct
+    : copy.reveal.wrong;
 
   return (
     <div
-      className="absolute inset-0 z-30 flex flex-col items-center justify-center"
-      style={{
-        backgroundColor: isCorrect
-          ? 'rgba(0, 255, 136, 0.10)'
-          : 'rgba(255, 51, 51, 0.10)',
-      }}
+      className="absolute inset-0 z-30 flex flex-col items-center justify-center px-8"
+      style={{ backgroundColor: 'rgba(19, 19, 19, 0.78)' }}
     >
-      {/* Backdrop blur */}
-      <div className="absolute inset-0 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-background/25" />
+      <div className="absolute inset-0 scanline-field opacity-60" />
 
-      {/* Result Icon — sharp square */}
-      <div className="relative z-10 reveal-flash">
-        <div
-          className="w-20 h-20 flex items-center justify-center text-4xl font-bold"
-          style={{
-            backgroundColor: isCorrect
-              ? 'rgba(0, 255, 136, 0.15)'
-              : 'rgba(255, 51, 51, 0.15)',
-            border: `1px solid ${isCorrect ? 'var(--correct)' : 'var(--wrong)'}`,
-            color: isCorrect ? 'var(--correct)' : 'var(--wrong)',
-          }}
-        >
-          {isCorrect ? '✓' : '✗'}
+      <div className="relative z-10 reveal-flash w-full max-w-sm border border-outline-variant bg-surface/90 px-6 py-7">
+        <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted/55">
+          {verdictLabel}
         </div>
-      </div>
 
-      {/* Answer Label — terminal style */}
-      <div className="relative z-10 mt-4 font-mono text-[11px] uppercase tracking-[0.2em] text-muted">
-        {data.answer === 'ai' ? 'CLASSIFICATION: AI-GENERATED' : 'CLASSIFICATION: AUTHENTIC'}
-      </div>
+        <div className="mt-5 font-mono text-[12px] uppercase tracking-[0.2em] text-foreground">
+          {answerLabel}
+        </div>
 
-      {/* Context Text */}
-      <div className="relative z-10 mt-4 px-8 max-w-sm text-center context-reveal">
-        <p className="text-sm text-white/80 leading-snug">
-          {data.context_short}
+        <p className="mt-5 text-sm text-muted leading-relaxed">
+          {revealOrigin(data)}
         </p>
+
         {data.answer === 'ai' && data.ai_prompt && (
-          <p className="mt-2 text-[10px] font-mono text-muted/60 italic truncate max-w-[280px] mx-auto tracking-wide">
+          <p className="mt-4 border-l border-ai/50 pl-3 text-[10px] font-mono text-muted/60 italic leading-relaxed line-clamp-2">
             &quot;{data.ai_prompt}&quot;
           </p>
         )}
+
         {data.answer === 'real' && (
-          <div className="mt-2 text-xs text-muted">
+          <div className="mt-4 text-[10px] font-mono text-muted/60 uppercase tracking-[0.12em] leading-relaxed">
             {data.photographer_name && data.photographer_url && data.unsplash_url ? (
               <span>
-                📷 Photo by <a href={`${data.photographer_url}?utm_source=uncanny_mvp&utm_medium=referral`} target="_blank" rel="noopener noreferrer" className="underline hover:text-white transition-colors">{data.photographer_name}</a> on <a href={`${data.unsplash_url}?utm_source=uncanny_mvp&utm_medium=referral`} target="_blank" rel="noopener noreferrer" className="underline hover:text-white transition-colors">Unsplash</a>
+                observed by <a href={`${data.photographer_url}?utm_source=uncanny_mvp&utm_medium=referral`} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">{data.photographer_name}</a> via <a href={`${data.unsplash_url}?utm_source=uncanny_mvp&utm_medium=referral`} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">Unsplash</a>
               </span>
             ) : data.source_credit ? (
-              <span>📷 {data.source_credit}</span>
-            ) : null}
+              <span>{data.source_credit}</span>
+            ) : (
+            <span>{copy.reveal.unknownOrigin}</span>
+            )}
+          </div>
+        )}
+
+        {data.guesses_ai + data.guesses_real > 5 && (
+          <div className="mt-5 border-t border-outline-variant pt-4 text-[10px] text-muted/55 font-mono uppercase tracking-[0.15em]">
+            {revealConsensus(data)}
           </div>
         )}
       </div>
-
-      {/* Fooled Stat */}
-      {totalGuesses > 5 && (
-        <div className="relative z-10 mt-4 text-[10px] text-muted/70 font-mono uppercase tracking-[0.15em] context-reveal">
-          {fooledPercent}% of players got this wrong
-        </div>
-      )}
     </div>
   );
 }

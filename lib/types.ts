@@ -12,6 +12,8 @@ export interface GuessResult {
   guess: 'ai' | 'real' | 'timeout';
   correct: boolean;
   timeRemaining: number;
+  answer?: 'ai' | 'real';
+  imageUrl?: string;
 }
 
 export interface DailySetResponse {
@@ -39,8 +41,12 @@ export interface GuessResponse {
 
 export interface UncannyStorage {
   todayDate: string;
+  todayStarted: boolean;
+  todayStartedAt: number | null;
   todayResults: GuessResult[];
   todayCompleted: boolean;
+  todayCompletedAt: number | null;
+  todayCompletionMs: number | null;
   currentStreak: number;
   lastPlayedDate: string;
   bestStreak: number;
@@ -50,7 +56,9 @@ export interface UncannyStorage {
 
 export type GamePhase =
   | 'loading'
+  | 'entry'
   | 'playing'
+  | 'investigating'
   | 'revealing'
   | 'completed'
   | 'error';
