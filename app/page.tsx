@@ -248,9 +248,11 @@ export default function Home() {
         setCompletionMs(finalState.todayCompletionMs);
         setElapsedMs(finalState.todayCompletionMs ?? 0);
       }
-      setRevealData(reveal);
-      setPhase('revealing');
-      setTimeout(() => advanceToNext(updatedResults), REVEAL_DURATION);
+      setTimeout(() => {
+        setRevealData(reveal);
+        setPhase('revealing');
+        setTimeout(() => advanceToNext(updatedResults), REVEAL_DURATION);
+      }, 250);
     } catch {
       const guessResult: GuessResult = {
         challengeId: challenge.id,
@@ -285,9 +287,11 @@ export default function Home() {
         setCompletionMs(finalState.todayCompletionMs);
         setElapsedMs(finalState.todayCompletionMs ?? 0);
       }
-      setRevealData(reveal);
-      setPhase('revealing');
-      setTimeout(() => advanceToNext(updatedResults), REVEAL_DURATION);
+      setTimeout(() => {
+        setRevealData(reveal);
+        setPhase('revealing');
+        setTimeout(() => advanceToNext(updatedResults), REVEAL_DURATION);
+      }, 250);
     } finally {
       submittingRef.current = false;
     }

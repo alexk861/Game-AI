@@ -72,12 +72,12 @@ export const copy = {
     markLabel: 'result',
     unavailable: 'unavailable',
     reflections: [
-      'Human certainty collapsed.',
-      'You trusted the wrong surfaces.',
-      'Observer confidence degraded during analysis.',
-      'You hesitated unusually long on organic patterns.',
-      'Your perception remained mostly stable.',
-      'You successfully isolated the anomalies.',
+      'You were completely misdirected.',
+      'You trusted these images too quickly.',
+      'People usually get this wrong.',
+      'Most people missed this.',
+      'Your perception was mostly stable.',
+      'You noticed something others didn\'t.',
     ],
     mark: (result: GuessResult) => {
       if (result.guess === 'timeout') return 'skipped';

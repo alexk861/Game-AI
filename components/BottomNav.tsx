@@ -28,7 +28,7 @@ export default function BottomNav() {
         className={`flex flex-col items-center justify-center p-2 w-full transition-all duration-0 ${isActive('/leaderboard') ? 'text-on-surface bg-surface-variant' : 'text-outline hover:bg-on-surface hover:text-background'}`}
       >
         <span className="material-symbols-outlined mb-1" style={{ fontVariationSettings: isActive('/leaderboard') ? "'wght' 300, 'FILL' 1" : "'wght' 200, 'FILL' 0" }}>insights</span>
-        <span className="font-mono text-[10px] sm:text-[12px] uppercase tracking-[0.15em]">ANALYTICS</span>
+        <span className="font-mono text-[10px] sm:text-[12px] uppercase tracking-[0.15em]">INDEX</span>
       </Link>
       
       <Link 
@@ -36,7 +36,7 @@ export default function BottomNav() {
         className={`flex flex-col items-center justify-center p-2 w-full transition-all duration-0 ${isActive('/profile') ? 'text-on-surface bg-surface-variant' : 'text-outline hover:bg-on-surface hover:text-background'}`}
       >
         <span className="material-symbols-outlined mb-1" style={{ fontVariationSettings: isActive('/profile') ? "'wght' 300, 'FILL' 1" : "'wght' 200, 'FILL' 0" }}>person</span>
-        <span className="font-mono text-[10px] sm:text-[12px] uppercase tracking-[0.15em]">OBSERVER</span>
+        <span className="font-mono text-[10px] sm:text-[12px] uppercase tracking-[0.15em]">RECORD</span>
       </Link>
     </nav>
   );

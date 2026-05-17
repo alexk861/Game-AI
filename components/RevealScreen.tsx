@@ -19,7 +19,7 @@ export default function RevealScreen({ imageUrl, data, result }: RevealScreenPro
   const origin = revealOrigin(data);
 
   return (
-    <main className="relative grid h-[100dvh] grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-background cinematic-bg reveal-breath">
+    <main className="relative grid h-[100dvh] grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-background cinematic-bg reveal-breath animate-in fade-in duration-500">
       <div className="ambient-field" />
       <section className="relative min-h-0 overflow-hidden">
         <img

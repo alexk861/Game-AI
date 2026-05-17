@@ -227,15 +227,17 @@ export default function ResultsDebrief({ results, challenges, streak, setDate, c
           </div>
           
           {/* Debug restart button */}
-          <div className="mt-8 flex justify-center">
-            <button
-              type="button"
-              onClick={handleRestartTest}
-              className="border border-ai/60 px-4 py-2 text-center text-xs font-mono text-ai active:translate-y-px"
-            >
-              {copy.cta.restart}
-            </button>
-          </div>
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-8 flex justify-center">
+              <button
+                type="button"
+                onClick={handleRestartTest}
+                className="border border-ai/60 px-4 py-2 text-center text-xs font-mono text-ai active:translate-y-px"
+              >
+                {copy.cta.restart}
+              </button>
+            </div>
+          )}
         </div>
       </section>
     </main>

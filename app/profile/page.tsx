@@ -17,15 +17,15 @@ export default function Profile() {
 
   const profileObservation = useMemo(() => {
     const observations = [
-      "Tendency to over-classify as AI in low-light scenarios. Subject exhibits heightened suspicion towards biological imperfections.",
-      "Distrusts symmetrical faces. Organic textures caused measurable hesitation during rapid-fire analysis.",
-      "Over-trusts artificial lighting. Confidence degrades significantly after prolonged observation periods.",
-      "Pattern-seeking behavior detected. Subject frequently misinterprets organic noise as generative artifacts."
+      "You frequently pause on symmetrical features. Organic textures seem to cause hesitation.",
+      "Your confidence drops in low-light scenarios. You show a high baseline of suspicion.",
+      "Pattern-seeking behavior detected. You often second-guess natural noise.",
+      "You trust lighting too quickly. Most of your errors happen in the first two seconds."
     ];
     const tags = [
-      ["Hyper-vigilant", "Static-sensitive", "Pattern-seeking"],
-      ["Symmetry-averse", "Organic-hesitant", "Fatigue-prone"],
-      ["Lighting-biased", "Confidence-degrading", "Surface-trusting"]
+      ["Hesitant", "Symmetry-focused", "Pattern-seeking"],
+      ["High-suspicion", "Organic-hesitant", "Fatigue-prone"],
+      ["Lighting-biased", "Confidence-drop", "Surface-trusting"]
     ];
     const randIndex = Math.floor(Math.random() * observations.length);
     const tagIndex = Math.floor(Math.random() * tags.length);
@@ -58,14 +58,14 @@ export default function Profile() {
 
       <div className="relative z-10 pt-32 pb-40 px-6 md:px-16 max-w-4xl mx-auto w-full">
         {/* Profile Header */}
-        <section className="mb-20">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-outline pb-8">
+        <section className="mb-12">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-outline pb-6">
             <div>
               <p className="font-mono text-xs text-outline mb-2">CLINICAL ASSESSMENT</p>
-              <h2 className="font-sans text-4xl md:text-5xl font-bold uppercase tracking-tighter">OBSERVER_884-A</h2>
+              <h2 className="font-sans text-3xl md:text-5xl font-bold uppercase tracking-tighter">PERCEPTION RECORD</h2>
             </div>
             <div className="font-mono text-xs text-outline flex gap-4">
-              <span>ST-556 / REDACTED</span>
+              <span>ACTIVE PARTICIPANT</span>
               <span className="text-primary animate-pulse">ACTIVE SIGNAL</span>
             </div>
           </div>
@@ -80,27 +80,31 @@ export default function Profile() {
         ) : (
           <>
             {/* Section 1: Perception Stats */}
-            <section className="mb-20 grid grid-cols-1 md:grid-cols-2 gap-px bg-outline">
-              <div className="bg-background p-8 flex flex-col justify-between aspect-video md:aspect-square">
-                <p className="font-mono text-xs text-outline uppercase">DRIFT RATE</p>
-                <div className="flex items-baseline gap-2">
-                  <span className="font-sans text-5xl md:text-6xl font-bold">{driftRate}%</span>
-                  <span className="material-symbols-outlined text-error text-sm">trending_up</span>
+            <section className="mb-12 grid grid-cols-1 md:grid-cols-2 gap-px bg-outline">
+              <div className="bg-background py-10 px-8 flex flex-col justify-between">
+                <p className="font-mono text-xs text-outline uppercase mb-12">DRIFT RATE</p>
+                <div>
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <span className="font-sans text-5xl md:text-6xl font-bold">{driftRate}%</span>
+                    <span className="material-symbols-outlined text-error text-sm">trending_up</span>
+                  </div>
+                  <p className="text-sm text-outline-variant">Deviation from objective consensus across {stats?.totalSetsPlayed} recorded sessions.</p>
                 </div>
-                <p className="text-sm text-outline-variant">Deviation from objective consensus across {stats?.totalSetsPlayed} recorded sessions.</p>
               </div>
-              <div className="bg-background p-8 flex flex-col justify-between aspect-video md:aspect-square">
-                <p className="font-mono text-xs text-outline uppercase">CALIBRATION STREAK</p>
-                <div className="font-sans text-5xl md:text-6xl font-bold uppercase">{stats?.currentStreak} DAYS</div>
-                <div className="h-1 w-full bg-surface-container mt-auto">
-                  <div className="h-full bg-on-surface w-3/4"></div>
+              <div className="bg-background py-10 px-8 flex flex-col justify-between">
+                <p className="font-mono text-xs text-outline uppercase mb-12">CALIBRATION STREAK</p>
+                <div>
+                  <div className="font-sans text-5xl md:text-6xl font-bold uppercase mb-4">{stats?.currentStreak} DAYS</div>
+                  <div className="h-1 w-full bg-surface-container mt-auto">
+                    <div className="h-full bg-on-surface w-3/4"></div>
+                  </div>
                 </div>
               </div>
             </section>
 
             {/* Section 2: Behavioral Profile */}
-            <section className="mb-20">
-              <div className="border border-outline p-8 md:p-12 relative overflow-hidden">
+            <section className="mb-12">
+              <div className="border border-outline py-8 px-8 md:px-12 relative overflow-hidden">
                 <div className="absolute inset-0 scanline-overlay opacity-30 pointer-events-none"></div>
                 <div className="flex items-center gap-4 mb-8 relative z-10">
                   <span className="material-symbols-outlined text-primary">psychology</span>

@@ -81,8 +81,8 @@ export default function Leaderboard() {
 
             {/* Row 01 */}
             <div className="col-span-12 grid grid-cols-12 py-8 border-b border-outline px-4 hover:bg-on-surface group transition-all duration-0 cursor-default">
-              <div className="col-span-2 font-mono text-xs text-outline group-hover:text-background">0x0A1</div>
-              <div className="col-span-4 font-sans text-xl md:text-2xl font-semibold uppercase group-hover:text-background tracking-tighter">OBS_001</div>
+              <div className="col-span-2 font-mono text-xs text-outline group-hover:text-background">01</div>
+              <div className="col-span-4 font-sans text-xl md:text-2xl font-semibold uppercase group-hover:text-background tracking-tighter">Elena M.</div>
               <div className="col-span-3 font-mono text-xs text-right self-center group-hover:text-background">0.002%</div>
               <div className="col-span-3 font-mono text-xs text-right self-center group-hover:text-background text-outline">OPTIMAL</div>
             </div>
@@ -90,9 +90,9 @@ export default function Leaderboard() {
             {/* Row 02 (User Highlighted) */}
             <div className="col-span-12 grid grid-cols-12 py-10 border-b-2 border-outline-variant bg-surface-container px-4 relative">
               <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-1 h-12 bg-on-surface"></div>
-              <div className="col-span-2 font-mono text-xs text-on-surface font-bold">0x0A2</div>
+              <div className="col-span-2 font-mono text-xs text-on-surface font-bold">02</div>
               <div className="col-span-4 flex flex-col gap-1">
-                <div className="font-sans text-xl md:text-2xl font-semibold uppercase text-on-surface tracking-tighter">OBS_094 [YOU]</div>
+                <div className="font-sans text-xl md:text-2xl font-semibold uppercase text-on-surface tracking-tighter">[YOU]</div>
                 <span className="font-mono text-[10px] text-outline uppercase tracking-[0.2em]">Calibration in progress...</span>
               </div>
               <div className="col-span-3 font-mono text-xs text-right self-center text-on-surface">0.142%</div>
@@ -102,24 +102,24 @@ export default function Leaderboard() {
             {/* Row 03 (Corrupted) */}
             <div className="col-span-12 grid grid-cols-12 py-8 border-b border-outline px-4 bg-error/5 relative overflow-hidden group">
               <div className="absolute inset-0 scanline-overlay opacity-50 mix-blend-overlay"></div>
-              <div className="col-span-2 font-mono text-xs text-error/60 line-through decoration-error/40 relative z-10">0x0A3</div>
-              <div className="col-span-4 font-sans text-xl md:text-2xl font-semibold uppercase text-error/80 tracking-tighter relative z-10">OBS_119C</div>
+              <div className="col-span-2 font-mono text-xs text-error/60 line-through decoration-error/40 relative z-10">03</div>
+              <div className="col-span-4 font-sans text-xl md:text-2xl font-semibold uppercase text-error/80 tracking-tighter relative z-10">Noah K.</div>
               <div className="col-span-3 font-mono text-xs text-right self-center text-error/60 relative z-10">ERR_NaN</div>
               <div className="col-span-3 font-mono text-xs text-right self-center text-error font-bold tracking-widest animate-pulse relative z-10">SIGNAL LOST</div>
             </div>
 
             {/* Row 04 */}
             <div className="col-span-12 grid grid-cols-12 py-8 border-b border-outline px-4 hover:bg-on-surface group transition-all duration-0 cursor-default">
-              <div className="col-span-2 font-mono text-xs text-outline group-hover:text-background">0x0A4</div>
-              <div className="col-span-4 font-sans text-xl md:text-2xl font-semibold uppercase group-hover:text-background tracking-tighter">OBS_212</div>
+              <div className="col-span-2 font-mono text-xs text-outline group-hover:text-background">04</div>
+              <div className="col-span-4 font-sans text-xl md:text-2xl font-semibold uppercase group-hover:text-background tracking-tighter">Hana S.</div>
               <div className="col-span-3 font-mono text-xs text-right self-center group-hover:text-background">4.921%</div>
               <div className="col-span-3 font-mono text-xs text-right self-center group-hover:text-background text-outline-variant">DEGRADED</div>
             </div>
 
             {/* Row 05 (Redacted) */}
             <div className="col-span-12 grid grid-cols-12 py-8 border-b border-outline px-4 cursor-default">
-              <div className="col-span-2 font-mono text-xs text-outline-variant">0x0A5</div>
-              <div className="col-span-4 font-sans text-xl md:text-2xl font-semibold uppercase text-outline-variant tracking-tighter opacity-40">OBS_REDACTED</div>
+              <div className="col-span-2 font-mono text-xs text-outline-variant">05</div>
+              <div className="col-span-4 font-sans text-xl md:text-2xl font-semibold uppercase text-outline-variant tracking-tighter opacity-40">REDACTED</div>
               <div className="col-span-3 font-mono text-xs text-right self-center text-outline-variant">--.---%</div>
               <div className="col-span-3 font-mono text-xs text-right self-center text-outline-variant tracking-widest bg-outline-variant text-transparent select-none w-fit ml-auto">REDACTED</div>
             </div>
@@ -154,7 +154,7 @@ export default function Leaderboard() {
           
           <div className="flex flex-col justify-center border-l border-outline pl-8">
             <p className="text-base text-outline mb-6 leading-relaxed">
-              Participation in the UNCANNY collective requires absolute synchronization. Any drift exceeding 5.0% results in immediate index redaction. Stability is monitored via subcutaneous drift-markers. 
+              Participation in this perception study requires consistent baseline calibration. Drift from the consensus average is monitored. Outliers may be removed from the active index to preserve data integrity.
             </p>
             <div className="flex flex-wrap gap-4">
               <button className="border border-outline px-8 py-3 font-mono text-xs uppercase tracking-[0.1em] hover:bg-on-surface hover:text-background transition-colors duration-0">
