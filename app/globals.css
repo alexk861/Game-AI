@@ -1,26 +1,183 @@
 @import "tailwindcss";
 
+/* ── Uncanny Design System ── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #000000;
+  --surface: #0A0A0A;
+  --text: #FFFFFF;
+  --text-muted: #666666;
+  --correct: #00FF88;
+  --wrong: #FF3333;
+  --ai-accent: #A855F7;
+  --real-accent: #3B82F6;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-surface: var(--surface);
+  --color-muted: var(--text-muted);
+  --color-correct: var(--correct);
+  --color-wrong: var(--wrong);
+  --color-ai: var(--ai-accent);
+  --color-real: var(--real-accent);
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'Roboto Mono', monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ── Base Reset ── */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  touch-action: manipulation;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── Noise Overlay ── */
+
+.noise-overlay {
+  position: absolute;
+  inset: 0;
+  background-image: url('/noise.png');
+  background-repeat: repeat;
+  mix-blend-mode: overlay;
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ── Swipe Card Transitions ── */
+
+.swipe-card {
+  transition: transform 0.08s ease-out;
+  will-change: transform;
+  touch-action: none;
+}
+
+.swipe-card-exit-left {
+  animation: swipeLeft 0.3s ease-in forwards;
+}
+
+.swipe-card-exit-right {
+  animation: swipeRight 0.3s ease-in forwards;
+}
+
+@keyframes swipeLeft {
+  to {
+    transform: translateX(-120%) rotate(-15deg);
+    opacity: 0;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@keyframes swipeRight {
+  to {
+    transform: translateX(120%) rotate(15deg);
+    opacity: 0;
+  }
+}
+
+/* ── Reveal Flash ── */
+
+.reveal-flash {
+  animation: flashIn 0.4s ease-out;
+}
+
+@keyframes flashIn {
+  0% { opacity: 0; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* ── Timer Bar ── */
+
+.timer-bar {
+  transition: width linear;
+  will-change: width;
+}
+
+/* ── Score Counter ── */
+
+.score-reveal {
+  animation: scoreIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes scoreIn {
+  0% { opacity: 0; transform: scale(0.5) translateY(20px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── Fade In Utility ── */
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Swipe Label Overlay ── */
+
+.swipe-label {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 10;
+}
+
+.swipe-label-ai {
+  left: 2rem;
+  color: var(--ai-accent);
+}
+
+.swipe-label-real {
+  right: 2rem;
+  color: var(--real-accent);
+}
+
+/* ── Progress Dot Pulse ── */
+
+.dot-active {
+  animation: dotPulse 1s ease-in-out infinite;
+}
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ── Context Slide Up ── */
+
+.context-reveal {
+  animation: slideUp 0.5s ease-out 0.4s forwards;
+  opacity: 0;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
 }
