@@ -43,46 +43,39 @@ export default function ScoreScreen({ results, streak, setDate }: ScoreScreenPro
           text: shareText,
         });
       } catch {
-        // User cancelled share — that's fine
+        // User cancelled share
       }
     } else {
       await navigator.clipboard.writeText(shareText);
-      // Brief visual feedback
       const btn = document.getElementById('share-btn');
       if (btn) {
-        btn.textContent = 'COPIED!';
-        setTimeout(() => {
-          btn.textContent = 'SHARE MY SCORE';
-        }, 2000);
+        btn.textContent = 'COPIED';
+        setTimeout(() => { btn.textContent = 'SHARE MY SCORE'; }, 2000);
       }
     }
   };
 
   return (
     <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-background px-6">
-      {/* Title */}
-      <div className="font-mono text-xs uppercase tracking-[0.3em] text-muted mb-6 fade-in">
+      <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted mb-6 fade-in">
         Reality Score
       </div>
 
-      {/* Score */}
       <div className="score-reveal">
         <div className="text-7xl font-bold font-mono tracking-tight">
           {score}<span className="text-3xl text-muted">/5</span>
         </div>
       </div>
 
-      {/* Message */}
       <p className="mt-4 text-lg text-white/70 text-center max-w-xs fade-in" style={{ animationDelay: '0.3s' }}>
         {message}
       </p>
 
-      {/* Result Strip */}
       <div className="flex gap-3 mt-8 fade-in" style={{ animationDelay: '0.5s' }}>
         {results.map((r, i) => (
           <div
             key={i}
-            className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold ${
+            className={`w-10 h-10 flex items-center justify-center text-lg font-bold ${
               r.guess === 'timeout'
                 ? 'bg-white/10 text-muted'
                 : r.correct
@@ -95,26 +88,22 @@ export default function ScoreScreen({ results, streak, setDate }: ScoreScreenPro
         ))}
       </div>
 
-      {/* Streak */}
       {streak > 0 && (
         <div className="mt-6 text-sm font-mono text-muted fade-in" style={{ animationDelay: '0.7s' }}>
           🔥 Day {streak} Streak
         </div>
       )}
 
-      {/* Share Button */}
       <button
         id="share-btn"
         onClick={handleShare}
-        className="mt-10 px-8 py-4 bg-white text-black font-mono text-sm font-bold uppercase tracking-wider
-                   rounded-lg transition-all duration-200 hover:bg-white/90 active:scale-95 fade-in"
+        className="btn-ghost mt-10 px-10 py-4 fade-in"
         style={{ animationDelay: '0.9s' }}
       >
         Share My Score
       </button>
 
-      {/* Footer */}
-      <div className="absolute bottom-6 text-xs text-muted/50 font-mono fade-in" style={{ animationDelay: '1.1s' }}>
+      <div className="absolute bottom-6 text-[10px] text-muted/40 font-mono uppercase tracking-[0.15em] fade-in" style={{ animationDelay: '1.1s' }}>
         {setDate} · uncanny.app
       </div>
     </div>

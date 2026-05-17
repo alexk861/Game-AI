@@ -25,22 +25,22 @@ export default function RevealOverlay({ data, visible }: RevealOverlayProps) {
       className="absolute inset-0 z-30 flex flex-col items-center justify-center"
       style={{
         backgroundColor: isCorrect
-          ? 'rgba(0, 255, 136, 0.15)'
-          : 'rgba(255, 51, 51, 0.15)',
+          ? 'rgba(0, 255, 136, 0.10)'
+          : 'rgba(255, 51, 51, 0.10)',
       }}
     >
       {/* Backdrop blur */}
       <div className="absolute inset-0 backdrop-blur-sm" />
 
-      {/* Result Icon */}
+      {/* Result Icon — sharp square */}
       <div className="relative z-10 reveal-flash">
         <div
-          className="w-20 h-20 rounded-full flex items-center justify-center text-4xl font-bold"
+          className="w-20 h-20 flex items-center justify-center text-4xl font-bold"
           style={{
             backgroundColor: isCorrect
-              ? 'rgba(0, 255, 136, 0.2)'
-              : 'rgba(255, 51, 51, 0.2)',
-            border: `2px solid ${isCorrect ? 'var(--correct)' : 'var(--wrong)'}`,
+              ? 'rgba(0, 255, 136, 0.15)'
+              : 'rgba(255, 51, 51, 0.15)',
+            border: `1px solid ${isCorrect ? 'var(--correct)' : 'var(--wrong)'}`,
             color: isCorrect ? 'var(--correct)' : 'var(--wrong)',
           }}
         >
@@ -48,18 +48,18 @@ export default function RevealOverlay({ data, visible }: RevealOverlayProps) {
         </div>
       </div>
 
-      {/* Answer Label */}
-      <div className="relative z-10 mt-4 font-mono text-sm uppercase tracking-[0.2em] text-muted">
-        {data.answer === 'ai' ? 'This was AI-generated' : 'This was real'}
+      {/* Answer Label — terminal style */}
+      <div className="relative z-10 mt-4 font-mono text-[11px] uppercase tracking-[0.2em] text-muted">
+        {data.answer === 'ai' ? 'CLASSIFICATION: AI-GENERATED' : 'CLASSIFICATION: AUTHENTIC'}
       </div>
 
       {/* Context Text */}
       <div className="relative z-10 mt-4 px-8 max-w-sm text-center context-reveal">
-        <p className="text-sm text-white/80 leading-relaxed">
+        <p className="text-sm text-white/80 leading-snug">
           {data.context_short}
         </p>
         {data.answer === 'ai' && data.ai_prompt && (
-          <p className="mt-2 text-xs font-mono text-muted italic truncate max-w-[280px] mx-auto">
+          <p className="mt-2 text-[10px] font-mono text-muted/60 italic truncate max-w-[280px] mx-auto tracking-wide">
             &quot;{data.ai_prompt}&quot;
           </p>
         )}
@@ -78,7 +78,7 @@ export default function RevealOverlay({ data, visible }: RevealOverlayProps) {
 
       {/* Fooled Stat */}
       {totalGuesses > 5 && (
-        <div className="relative z-10 mt-4 text-xs text-muted font-mono context-reveal">
+        <div className="relative z-10 mt-4 text-[10px] text-muted/70 font-mono uppercase tracking-[0.15em] context-reveal">
           {fooledPercent}% of players got this wrong
         </div>
       )}

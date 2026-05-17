@@ -22,7 +22,7 @@ export default function ProgressDots({ total, current, results }: ProgressDotsPr
         return (
           <div
             key={i}
-            className={`rounded-full transition-all duration-300 ${dotColor} ${
+            className={`transition-all duration-300 ${dotColor} ${
               isCurrent ? 'w-3 h-3 dot-active' : 'w-2 h-2'
             }`}
           />

@@ -1,12 +1,15 @@
 @import "tailwindcss";
 
-/* ── Uncanny Design System ── */
+/* ── Uncanny Design System (Stitch-aligned) ── */
 
 :root {
-  --bg: #000000;
-  --surface: #0A0A0A;
-  --text: #FFFFFF;
-  --text-muted: #666666;
+  --bg: #131313;
+  --surface: #201f1f;
+  --surface-container: #2a2a2a;
+  --text: #e2e2e2;
+  --text-muted: #cfc4c5;
+  --outline: #988e90;
+  --outline-variant: #444748;
   --correct: #00FF88;
   --wrong: #FF3333;
   --ai-accent: #A855F7;
@@ -17,13 +20,16 @@
   --color-background: var(--bg);
   --color-foreground: var(--text);
   --color-surface: var(--surface);
+  --color-surface-container: var(--surface-container);
   --color-muted: var(--text-muted);
+  --color-outline: var(--outline);
+  --color-outline-variant: var(--outline-variant);
   --color-correct: var(--correct);
   --color-wrong: var(--wrong);
   --color-ai: var(--ai-accent);
   --color-real: var(--real-accent);
-  --font-body: 'Space Grotesk', sans-serif;
-  --font-mono: 'Roboto Mono', monospace;
+  --font-body: 'Geist', sans-serif;
+  --font-mono: 'Space Mono', monospace;
 }
 
 /* ── Base Reset ── */
@@ -188,4 +194,33 @@ html, body {
   0% { top: 0%; }
   50% { top: 100%; }
   100% { top: 0%; }
+}
+
+/* ── Brutalist Button Inversion ── */
+
+.btn-ghost {
+  border: 1px solid var(--outline);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: background-color 0s linear, color 0s linear;
+  cursor: pointer;
+}
+
+.btn-ghost:hover {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.btn-ghost:active {
+  transform: scale(0.97);
+}
+
+.btn-ghost:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }

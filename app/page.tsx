@@ -18,8 +18,17 @@ import {
 import type { Challenge, GuessResult, GamePhase, RevealData } from '@/lib/types';
 
 const TIMER_DURATION = 10;
-const REVEAL_DURATION = 1800; // ms
+const REVEAL_DURATION = 1800;
 const TOTAL_CHALLENGES = 5;
+
+// Social tension hints based on difficulty
+const TENSION_HINTS = [
+  'most players hesitate here',
+  '68% got this wrong',
+  'only 12% spotted this one',
+  'this one fools almost everyone',
+  'harder than it looks',
+];
 
 export default function Home() {
   const [phase, setPhase] = useState<GamePhase>('loading');
@@ -37,10 +46,8 @@ export default function Home() {
   // ── Fetch daily set on mount ──
   useEffect(() => {
     const loadGame = async () => {
-      // Init localStorage session
       const state = initTodaySession();
 
-      // Check if already completed today
       if (hasCompletedToday()) {
         setResults(state.todayResults);
         setStreak(state.currentStreak);
@@ -50,7 +57,6 @@ export default function Home() {
         return;
       }
 
-      // Fetch today's challenges
       try {
         const res = await fetch('/api/daily-set');
         if (!res.ok) {
@@ -67,7 +73,6 @@ export default function Home() {
         setChallenges(data.challenges);
         setSetDate(data.date);
 
-        // Resume from where user left off
         const resumeIdx = getResumeIndex();
         if (resumeIdx > 0) {
           setResults(state.todayResults);
@@ -78,7 +83,6 @@ export default function Home() {
         setPhase('playing');
         setTimerRunning(true);
 
-        // Fire challenge_started for first challenge
         if (data.challenges.length > 0) {
           const c = data.challenges[resumeIdx] || data.challenges[0];
           analytics.challengeStarted(c.id, c.set_order, c.difficulty);
@@ -91,24 +95,21 @@ export default function Home() {
 
     loadGame();
   }, []);
+
   // ── Advance to next challenge or complete ──
   const advanceToNext = useCallback((currentResults: GuessResult[]) => {
     const nextIndex = currentResults.length;
 
     if (nextIndex >= TOTAL_CHALLENGES || nextIndex >= challenges.length) {
-      // Set completed
       const finalState = completeSet();
       setStreak(finalState.currentStreak);
-
       const score = currentResults.filter(r => r.correct).length;
       analytics.setCompleted(score, finalState.currentStreak, setDate);
-
       setPhase('completed');
     } else {
-      // Next challenge
       setCurrentIndex(nextIndex);
       setRevealData(null);
-      setTimerKey(prev => prev + 1); // reset timer
+      setTimerKey(prev => prev + 1);
       setPhase('playing');
       setTimerRunning(true);
 
@@ -130,11 +131,9 @@ export default function Home() {
     setTimerRunning(false);
     setPhase('revealing');
 
-    // Haptic feedback
     if (navigator.vibrate) navigator.vibrate(50);
 
     if (guess === 'timeout') {
-      // Timer expired — auto-wrong
       analytics.timerExpired(challenge.id, challenge.set_order);
 
       const guessResult: GuessResult = {
@@ -146,7 +145,7 @@ export default function Home() {
 
       const reveal: RevealData = {
         correct: false,
-        answer: 'ai', // placeholder — will be overwritten by API
+        answer: 'ai',
         context_short: 'Time\'s up! Too slow to decide.',
         ai_prompt: null,
         source_credit: null,
@@ -157,7 +156,6 @@ export default function Home() {
         guesses_real: 0,
       };
 
-      // Still call API to get real answer + increment counter
       try {
         const res = await fetch('/api/guess', {
           method: 'POST',
@@ -174,7 +172,7 @@ export default function Home() {
           reveal.guesses_real = data.guesses_real;
         }
       } catch {
-        // Silent fail — show timeout anyway
+        // Silent fail
       }
 
       setRevealData(reveal);
@@ -184,11 +182,8 @@ export default function Home() {
       const updatedResults = [...results, guessResult];
       setResults(updatedResults);
       addResult(guessResult);
-
-      // Auto-advance after reveal
       setTimeout(() => advanceToNext(updatedResults), REVEAL_DURATION);
     } else {
-      // Normal guess
       try {
         const res = await fetch('/api/guess', {
           method: 'POST',
@@ -199,7 +194,7 @@ export default function Home() {
         if (!res.ok) throw new Error('Failed to submit guess');
 
         const data = await res.json();
-        const timeRemaining = TIMER_DURATION; // Approximate — we stopped the timer
+        const timeRemaining = TIMER_DURATION;
 
         const guessResult: GuessResult = {
           challengeId: challenge.id,
@@ -234,11 +229,8 @@ export default function Home() {
         const updatedResults = [...results, guessResult];
         setResults(updatedResults);
         addResult(guessResult);
-
-        // Auto-advance after reveal
         setTimeout(() => advanceToNext(updatedResults), REVEAL_DURATION);
       } catch {
-        // On API failure, still advance
         const guessResult: GuessResult = {
           challengeId: challenge.id,
           guess,
@@ -255,14 +247,12 @@ export default function Home() {
     submittingRef.current = false;
   }, [phase, challenges, currentIndex, results, advanceToNext]);
 
-  // ── Timer expired handler ──
   const handleTimerExpire = useCallback(() => {
     if (phase === 'playing') {
       submitGuess('timeout');
     }
   }, [phase, submitGuess]);
 
-  // ── Handle swipe ──
   const handleSwipe = useCallback((direction: 'ai' | 'real') => {
     if (phase === 'playing') {
       submitGuess(direction);
@@ -271,18 +261,16 @@ export default function Home() {
 
   // ── Render ──
 
-  // Loading State
   if (phase === 'loading') {
     return (
       <main className="h-[100dvh] flex flex-col items-center justify-center bg-background">
-        <div className="font-mono text-xs uppercase tracking-[0.3em] text-muted animate-pulse">
+        <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted animate-pulse">
           Loading...
         </div>
       </main>
     );
   }
 
-  // Error State
   if (phase === 'error') {
     return (
       <main className="h-[100dvh] flex flex-col items-center justify-center bg-background px-8">
@@ -292,7 +280,6 @@ export default function Home() {
     );
   }
 
-  // Completed State
   if (phase === 'completed') {
     return (
       <main className="h-[100dvh] relative bg-background">
@@ -313,18 +300,23 @@ export default function Home() {
     );
   }
 
+  // Pick a social tension hint based on challenge difficulty
+  const tensionHint = currentChallenge.difficulty >= 3
+    ? TENSION_HINTS[currentIndex % TENSION_HINTS.length]
+    : undefined;
+
   return (
     <main className="h-[100dvh] flex flex-col bg-background relative overflow-hidden">
-      {/* Top Bar: Timer + Progress */}
-      <div className="relative z-20 pt-[env(safe-area-inset-top)]">
+      {/* ── Compact Top Bar ── */}
+      <div className="relative z-20 flex-shrink-0 pt-[env(safe-area-inset-top)]">
         <Timer
           key={timerKey}
           duration={TIMER_DURATION}
           running={timerRunning}
           onExpire={handleTimerExpire}
         />
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
+        <div className="flex items-center justify-between px-4 py-2">
+          <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted/60">
             Uncanny
           </div>
           <ProgressDots
@@ -332,14 +324,14 @@ export default function Home() {
             current={currentIndex}
             results={results.map(r => ({ correct: r.correct }))}
           />
-          <div className="font-mono text-[10px] text-muted">
+          <div className="font-mono text-[9px] text-muted/60">
             {currentIndex + 1}/{TOTAL_CHALLENGES}
           </div>
         </div>
       </div>
 
-      {/* Challenge Area */}
-      <div className="flex-1 relative">
+      {/* ── Challenge Area: image + decision ── */}
+      <div className="flex-1 relative min-h-0">
         <SwipeCard
           key={currentChallenge.id}
           challengeId={currentChallenge.id}
@@ -348,6 +340,7 @@ export default function Home() {
           onSwipe={handleSwipe}
           disabled={phase !== 'playing'}
           onNextImageUrl={nextChallenge?.image_url}
+          communityHint={tensionHint}
         />
 
         {/* Reveal Overlay */}
