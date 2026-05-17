@@ -61,6 +61,7 @@ export type GamePhase =
   | 'investigating'
   | 'revealing'
   | 'completed'
+  | 'exhausted'
   | 'error';
 
 export interface RevealData {

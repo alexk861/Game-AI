@@ -6,11 +6,19 @@
   --bg: #131313;
   --surface: #201f1f;
   --surface-container: #262424;
+  --surface-container-low: #1c1b1b;
+  --surface-container-lowest: #0e0e0e;
+  --surface-variant: #353434;
   --text: #e6ddde;
   --text-muted: #cfc4c5;
+  --on-surface: #e5e2e1;
+  --on-surface-variant: #c4c7c7;
   --outline: #988e90;
   --outline-variant: #3a3637;
   --accent-red: #a04040;
+  --error: #ffb4ab;
+  --on-error: #690005;
+  --primary: #e2e2e2;
   --signal-dim: #70686a;
   --signal-cold: #cfc4c5;
   --correct: var(--signal-cold);
@@ -24,9 +32,17 @@
   --color-foreground: var(--text);
   --color-surface: var(--surface);
   --color-surface-container: var(--surface-container);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface-variant: var(--surface-variant);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
   --color-muted: var(--text-muted);
   --color-outline: var(--outline);
   --color-outline-variant: var(--outline-variant);
+  --color-error: var(--error);
+  --color-on-error: var(--on-error);
+  --color-primary: var(--primary);
   --color-correct: var(--correct);
   --color-wrong: var(--wrong);
   --color-ai: var(--ai-accent);
@@ -79,6 +95,42 @@ a {
   opacity: 0.12;
   pointer-events: none;
   z-index: 5;
+}
+
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.05;
+  background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCec2ElU7HwcABnnmnNxIdlBptr9WnRc4vdiEB0DrD66yd4HZSqHlNgwMu4cJeaFNSQGOKKCC3Fc1dxIHfm2rgcpSzoMLXbzc0q2yseOgclYbLho44KoBEljJ5QJ3kYHNQrj3uQ_sItSUvR4_A7F5p4EuG3Iyi7iJzun7RuNBM3ctqSVPL4aJheWtuZ3tcHAJEpx00qGlJ0B9KlzEl8lFenfsc4vUkYMJg7sosHHQkWswGPg50gftgURg2Jm4lqLNjduOOTHGR98_Kj");
+}
+
+.scanline-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  background: linear-gradient(to bottom, transparent 50%, rgba(152, 142, 144, 0.05) 51%, transparent 51%);
+  background-size: 100% 4px;
+}
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  background: radial-gradient(circle, transparent 40%, rgba(0, 0, 0, 0.8) 100%);
+}
+
+.terminal-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 16px;
+  background-color: var(--on-surface);
+  margin-left: 4px;
+  vertical-align: middle;
+  animation: dotPulse 1s steps(2, start) infinite;
 }
 
 .cinematic-bg {

@@ -187,23 +187,46 @@ export default function ResultsDebrief({ results, challenges, streak, setDate, c
           </div>
         )}
 
-        <div className="grid gap-4 pt-8 md:mt-auto md:gap-3">
+        <div className="grid gap-4 pt-8 md:mt-auto md:gap-3 pb-8">
           <button
             id="share-btn"
             type="button"
             onClick={handleShare}
             className="w-full border border-outline bg-foreground px-5 py-5 text-left text-background active:translate-y-px"
           >
-            <span className="block min-w-0 text-lg sm:text-xl">{copy.cta.export}</span>
+            <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-background/65 mb-1">
+              {copy.cta.export}
+            </span>
+            <span className="block min-w-0 text-lg sm:text-xl">Share results</span>
           </button>
+          
           <div className="grid gap-4 md:grid-cols-2 md:gap-3">
-            <div className="min-w-0 border border-outline-variant px-4 py-4 text-sm leading-relaxed text-muted/65">
-              {copy.cta.returnLater}
-            </div>
+            <a
+              href="/profile"
+              className="min-w-0 border border-outline-variant px-4 py-4 text-center font-mono text-xs uppercase tracking-[0.1em] text-muted hover:text-foreground transition-colors"
+            >
+              View Record
+            </a>
+            <a
+              href="/leaderboard"
+              className="min-w-0 border border-outline-variant px-4 py-4 text-center font-mono text-xs uppercase tracking-[0.1em] text-muted hover:text-foreground transition-colors"
+            >
+              Compare Observers
+            </a>
+          </div>
+
+          <div className="mt-4 border-t border-outline-variant/50 pt-6 text-center">
+            <p className="text-sm leading-relaxed text-muted/65">
+              Today's set is complete. The archive will refresh tomorrow.
+            </p>
+          </div>
+          
+          {/* Debug restart button */}
+          <div className="mt-8 flex justify-center">
             <button
               type="button"
               onClick={handleRestartTest}
-              className="min-w-0 border border-ai/60 px-4 py-4 text-left text-sm text-ai active:translate-y-px"
+              className="border border-ai/60 px-4 py-2 text-center text-xs font-mono text-ai active:translate-y-px"
             >
               {copy.cta.restart}
             </button>

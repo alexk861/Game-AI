@@ -5,6 +5,7 @@ import WelcomeScreen from '@/components/WelcomeScreen';
 import GameShell from '@/components/GameShell';
 import RevealScreen from '@/components/RevealScreen';
 import ResultsDebrief from '@/components/ResultsDebrief';
+import ArchiveExhausted from '@/components/ArchiveExhausted';
 import { copy, socialTensionFor } from '@/lib/copy';
 import { analytics } from '@/lib/analytics';
 import {
@@ -70,7 +71,7 @@ export default function Home() {
         setCompletionMs(state.todayCompletionMs);
         setElapsedMs(state.todayCompletionMs ?? 0);
         analytics.returningUser(state.currentStreak, state.totalSetsPlayed);
-        setPhase('completed');
+        setPhase('exhausted');
         return;
       }
 
@@ -343,6 +344,10 @@ export default function Home() {
         completionMs={completionMs}
       />
     );
+  }
+
+  if (phase === 'exhausted') {
+    return <ArchiveExhausted />;
   }
 
   const currentChallenge = challenges[currentIndex];
