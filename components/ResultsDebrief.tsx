@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { Challenge, GuessResult } from '@/lib/types';
 import { analytics } from '@/lib/analytics';
-import { copy, resultReflection } from '@/lib/copy';
+import { copy, resultReflection, speedObservation, reasoningInsight } from '@/lib/copy';
 
 interface ResultsDebriefProps {
   results: GuessResult[];
@@ -24,6 +24,8 @@ export default function ResultsDebrief({ results, challenges, streak, setDate, c
   const comparison = comparisonFor(score);
   const misleadingIndex = Math.max(0, results.findIndex(result => !result.correct));
   const misleadingChallenge = challenges[misleadingIndex] || challenges[0];
+  const speedObs = speedObservation(results, 12);
+  const tagInsight = reasoningInsight(results);
   const selectedResult = results[selectedIndex] || results[0];
   const selectedChallenge = challenges.find(challenge => challenge.id === selectedResult?.challengeId) || challenges[selectedIndex] || challenges[0];
   const selectedImageUrl = selectedResult?.imageUrl || selectedChallenge?.image_url;
@@ -103,6 +105,21 @@ export default function ResultsDebrief({ results, challenges, streak, setDate, c
           <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted/35">
             {copy.results.sample}
           </p>
+        </div>
+
+        {/* ── Speed Observation ── */}
+        <div className="mt-5 border-l border-outline/40 pl-4">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted/45 mb-1">
+            observation
+          </p>
+          <p className="text-sm leading-relaxed text-muted/72 italic">
+            {speedObs}
+          </p>
+          {tagInsight && (
+            <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.16em] text-muted/40">
+              {tagInsight}
+            </p>
+          )}
         </div>
 
         {misleadingChallenge && (
@@ -186,6 +203,14 @@ export default function ResultsDebrief({ results, challenges, streak, setDate, c
                       {copy.results.mark(selectedResult)}
                     </span>
                   </div>
+                  {selectedResult.reasoningTag && (
+                    <div>
+                      <span className="block text-muted/35">noted</span>
+                      <span className="mt-1 block text-foreground">
+                        {selectedResult.reasoningTag}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

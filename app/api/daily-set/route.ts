@@ -28,6 +28,12 @@ export async function GET() {
     );
   }
 
+  // ── Difficulty Progression ──
+  // Re-sort by difficulty ascending for dramatic pacing:
+  // Easy(1) → Medium(2) → Surprising(3) → Hard(4) → Extreme(5)
+  // The user should gradually lose certainty across the session.
+  data.sort((a, b) => a.difficulty - b.difficulty);
+
   return NextResponse.json(
     { date: today, challenges: data },
     {

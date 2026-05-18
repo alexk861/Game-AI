@@ -24,6 +24,26 @@ export default function WelcomeScreen({ onBegin }: WelcomeScreenProps) {
           <p className="mt-5 max-w-[17rem] text-lg leading-snug text-muted">
             {copy.onboarding.subtitle}
           </p>
+
+          {/* Challenge Briefing */}
+          <div className="mt-8 border-l border-outline-variant/70 pl-4 space-y-3">
+            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted/50">
+              how it works
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center border border-outline-variant text-[9px] font-mono text-muted/60">5</span>
+              <span className="text-sm leading-snug text-muted/80">Five images. Each could be real or AI-generated.</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center border border-ai/50 text-[9px] font-mono text-error/70">?</span>
+              <span className="text-sm leading-snug text-muted/80">Decide for each: <strong className="text-foreground/90">Real</strong> or <strong className="text-error/90">AI</strong></span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center border border-outline-variant text-[9px] font-mono text-muted/60">⏱</span>
+              <span className="text-sm leading-snug text-muted/80">12 seconds per image. Trust your instinct.</span>
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={onBegin}

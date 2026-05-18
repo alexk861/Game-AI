@@ -39,6 +39,11 @@ export const copy = {
     ],
   },
 
+  reasoning: {
+    tags: ['lighting', 'texture', 'too clean'] as const,
+    label: 'what gave it away?',
+  },
+
   reveal: {
     label: 'answer',
     real: 'This image was real.',
@@ -54,6 +59,15 @@ export const copy = {
     aiOrigin: 'AI image. The clues were misleading.',
     unknownOrigin: 'Source details unavailable.',
     networkFallback: 'Could not verify the source.',
+  },
+
+  speed: {
+    impulsive: 'Your responses were near-instant. You relied on instinct over analysis.',
+    deliberate: 'You took measured time before committing. A careful observer.',
+    cautious: 'You lingered on most images. The uncertainty was visible.',
+    hesitant: 'You hesitated significantly. The images held your attention too long.',
+    earlyStrong: 'Your instincts were strongest early in the session.',
+    lateSlow: 'Difficult images slowed your decisions.',
   },
 
   results: {
@@ -129,4 +143,56 @@ export function revealOrigin(data: RevealData): string {
 
 export function resultReflection(score: number): string {
   return copy.results.reflections[score] ?? copy.results.reflections[0];
+}
+
+// ── Speed Recognition ──
+// Analyzes response timing across the session and returns a single
+// quiet, observational sentence for the results screen.
+export function speedObservation(results: GuessResult[], timerDuration: number): string {
+  const validResults = results.filter(r => r.guess !== 'timeout');
+  if (validResults.length === 0) return copy.speed.hesitant;
+
+  const reactionTimes = validResults.map(r => timerDuration - r.timeRemaining);
+  const avgReaction = reactionTimes.reduce((sum, t) => sum + t, 0) / reactionTimes.length;
+
+  // Check if early responses were faster than late ones
+  const half = Math.ceil(validResults.length / 2);
+  const earlyTimes = reactionTimes.slice(0, half);
+  const lateTimes = reactionTimes.slice(half);
+  const earlyAvg = earlyTimes.reduce((s, t) => s + t, 0) / earlyTimes.length;
+  const lateAvg = lateTimes.length > 0 ? lateTimes.reduce((s, t) => s + t, 0) / lateTimes.length : earlyAvg;
+
+  // If early answers were notably faster, call that out
+  if (earlyAvg < lateAvg - 2 && validResults.length >= 3) {
+    return copy.speed.earlyStrong;
+  }
+
+  // If late answers were much slower, note the difficulty effect
+  if (lateAvg > earlyAvg + 2.5 && validResults.length >= 3) {
+    return copy.speed.lateSlow;
+  }
+
+  // Fall back to overall speed tier
+  if (avgReaction < 2.5) return copy.speed.impulsive;
+  if (avgReaction < 5) return copy.speed.deliberate;
+  if (avgReaction < 8) return copy.speed.cautious;
+  return copy.speed.hesitant;
+}
+
+// ── Reasoning Tag Insights ──
+// Returns the most cited tag across the session, or null if < 2 tags selected.
+export function reasoningInsight(results: GuessResult[]): string | null {
+  const tags = results.map(r => r.reasoningTag).filter((t): t is string => !!t);
+  if (tags.length < 2) return null;
+
+  const counts: Record<string, number> = {};
+  for (const tag of tags) {
+    counts[tag] = (counts[tag] || 0) + 1;
+  }
+
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const topTag = sorted[0]?.[0];
+  if (!topTag) return null;
+
+  return `Most cited: ${topTag}`;
 }

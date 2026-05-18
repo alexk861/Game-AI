@@ -6,6 +6,7 @@ import SwipeCard from '@/components/SwipeCard';
 import DecisionControls from '@/components/DecisionControls';
 import ProgressIndicator from '@/components/ProgressIndicator';
 import SocialTensionHint from '@/components/SocialTensionHint';
+import ReasoningTags from '@/components/ReasoningTags';
 import { copy } from '@/lib/copy';
 
 interface GameShellProps {
@@ -20,9 +21,11 @@ interface GameShellProps {
   total: number;
   results: GuessResult[];
   socialHint: string;
+  showReasoningTags: boolean;
   onTimerExpire: () => void;
   onDecision: (choice: 'ai' | 'real') => void;
   onInvestigatingChange: (investigating: boolean) => void;
+  onTagSelected: (tag: string) => void;
 }
 
 export default function GameShell({
@@ -37,9 +40,11 @@ export default function GameShell({
   total,
   results,
   socialHint,
+  showReasoningTags,
   onTimerExpire,
   onDecision,
   onInvestigatingChange,
+  onTagSelected,
 }: GameShellProps) {
   const disabled = phase !== 'playing' && phase !== 'investigating';
   const isCommitting = !timerRunning && (phase === 'playing' || phase === 'investigating');
@@ -51,7 +56,7 @@ export default function GameShell({
       <div className="ambient-field" />
       <div className="relative z-30 flex-shrink-0 pt-[env(safe-area-inset-top)]">
         <Timer key={timerKey} duration={timerDuration} running={timerRunning} onExpire={onTimerExpire} />
-        <div className="flex items-center justify-between bg-gradient-to-b from-background/92 via-background/62 to-transparent px-4 pb-8 pt-4">
+        <div className="flex items-center justify-between bg-gradient-to-b from-background/92 via-background/62 to-transparent px-4 pb-6 pt-2">
           <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted/55">
             UNCANNY
           </div>
@@ -66,7 +71,20 @@ export default function GameShell({
         </div>
       </div>
 
-      <div className="relative -mt-8 flex min-h-0 flex-1 flex-col">
+      <div className="relative -mt-4 flex min-h-0 flex-1 flex-col">
+        {/* ── Question label over the image ── */}
+        <div className="absolute top-4 left-0 right-0 z-30 flex justify-center pointer-events-none">
+          <div className="bg-background/70 backdrop-blur-sm border border-outline-variant/50 px-4 py-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted/60">
+              Image {currentIndex + 1} of {total}
+            </span>
+            <span className="mx-2 text-outline-variant/50">—</span>
+            <span className="font-mono text-xs uppercase tracking-[0.15em] text-foreground/90 font-medium">
+              AI or Real?
+            </span>
+          </div>
+        </div>
+
         <div className="min-h-0 flex-1">
           <SwipeCard
             challengeId={challenge.id}
@@ -89,6 +107,7 @@ export default function GameShell({
 
         <div className="relative z-20 -mt-24 flex-shrink-0 border-t border-outline-variant/70 bg-gradient-to-b from-background/70 via-background/94 to-background px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-8">
           <SocialTensionHint text={socialHint} />
+          <ReasoningTags visible={showReasoningTags} onTagSelected={onTagSelected} />
           <div className="mt-4">
             <DecisionControls disabled={disabled} onDecision={onDecision} />
           </div>

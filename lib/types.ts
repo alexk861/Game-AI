@@ -14,6 +14,7 @@ export interface GuessResult {
   timeRemaining: number;
   answer?: 'ai' | 'real';
   imageUrl?: string;
+  reasoningTag?: string;
 }
 
 export interface DailySetResponse {

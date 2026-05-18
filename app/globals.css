@@ -457,3 +457,94 @@ a {
   50% { filter: drop-shadow(2px 0px 0px rgba(160, 64, 64, 0.5)) drop-shadow(-2px 0px 0px rgba(152, 142, 144, 0.5)); }
   100% { filter: drop-shadow(0px 0px 0px rgba(160, 64, 64, 0.2)) drop-shadow(0px 0px 0px rgba(152, 142, 144, 0.2)); }
 }
+
+/* ── Timer Urgency Animations ── */
+
+.timer-critical-pulse {
+  animation: timerCriticalPulse 0.6s ease-in-out infinite;
+}
+
+@keyframes timerCriticalPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.08); }
+}
+
+.timer-critical-shake {
+  animation: timerCriticalShake 0.3s ease-in-out infinite;
+}
+
+@keyframes timerCriticalShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-1px); }
+  75% { transform: translateX(1px); }
+}
+
+/* ── Reveal: Next-Image Loading Bar ── */
+
+.reveal-next-bar {
+  width: 0%;
+  animation: revealNextFill 5.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+@keyframes revealNextFill {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+.reveal-next-dots {
+  animation: revealDots 1.2s steps(3, end) infinite;
+}
+
+@keyframes revealDots {
+  0% { opacity: 0.2; }
+  33% { opacity: 0.5; }
+  66% { opacity: 0.8; }
+  100% { opacity: 0.2; }
+}
+
+/* ── Reveal: Source Badge ── */
+
+.reveal-source-badge {
+  animation: revealBadgeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+  opacity: 0;
+  transform: scale(0.9);
+}
+
+@keyframes revealBadgeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ── Reasoning Tags ── */
+
+.reasoning-tags-container {
+  padding: 0.5rem 0 0.25rem;
+}
+
+.reasoning-tag-pill {
+  cursor: pointer;
+  background: transparent;
+}
+
+.reasoning-tag-enter {
+  animation: reasoningFadeIn 0.22s ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes reasoningFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

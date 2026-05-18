@@ -6,7 +6,7 @@ import GameShell from '@/components/GameShell';
 import RevealScreen from '@/components/RevealScreen';
 import ResultsDebrief from '@/components/ResultsDebrief';
 import ArchiveExhausted from '@/components/ArchiveExhausted';
-import { copy, socialTensionFor } from '@/lib/copy';
+import { copy, socialTensionFor, speedObservation, reasoningInsight } from '@/lib/copy';
 import { analytics } from '@/lib/analytics';
 import {
   initTodaySession,
@@ -32,6 +32,7 @@ export default function Home() {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [results, setResults] = useState<GuessResult[]>([]);
+  const [showReasoningTags, setShowReasoningTags] = useState(false);
   const [revealData, setRevealData] = useState<RevealData | null>(null);
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerKey, setTimerKey] = useState(0);
@@ -167,6 +168,7 @@ export default function Home() {
     } else {
       setCurrentIndex(nextIndex);
       setRevealData(null);
+      setShowReasoningTags(false);
       setTimerKey(previous => previous + 1);
       setPhase('playing');
       setTimerRunning(true);
@@ -248,11 +250,13 @@ export default function Home() {
         setCompletionMs(finalState.todayCompletionMs);
         setElapsedMs(finalState.todayCompletionMs ?? 0);
       }
+      setShowReasoningTags(true);
       setTimeout(() => {
+        setShowReasoningTags(false);
         setRevealData(reveal);
         setPhase('revealing');
         setTimeout(() => advanceToNext(updatedResults), REVEAL_DURATION);
-      }, 250);
+      }, 2200);
     } catch {
       const guessResult: GuessResult = {
         challengeId: challenge.id,
@@ -287,11 +291,13 @@ export default function Home() {
         setCompletionMs(finalState.todayCompletionMs);
         setElapsedMs(finalState.todayCompletionMs ?? 0);
       }
+      setShowReasoningTags(true);
       setTimeout(() => {
+        setShowReasoningTags(false);
         setRevealData(reveal);
         setPhase('revealing');
         setTimeout(() => advanceToNext(updatedResults), REVEAL_DURATION);
-      }, 250);
+      }, 2200);
     } finally {
       submittingRef.current = false;
     }
@@ -308,6 +314,15 @@ export default function Home() {
       if (investigating && current === 'playing') return 'investigating';
       if (!investigating && current === 'investigating') return 'playing';
       return current;
+    });
+  }, []);
+
+  const handleTagSelected = useCallback((tag: string) => {
+    setResults(prev => {
+      if (prev.length === 0) return prev;
+      const updated = [...prev];
+      updated[updated.length - 1] = { ...updated[updated.length - 1], reasoningTag: tag };
+      return updated;
     });
   }, []);
 
@@ -387,9 +402,11 @@ export default function Home() {
       total={TOTAL_CHALLENGES}
       results={results}
       socialHint={socialHintFor(currentChallenge, currentIndex)}
+      showReasoningTags={showReasoningTags}
       onTimerExpire={handleTimerExpire}
       onDecision={submitGuess}
       onInvestigatingChange={handleInvestigatingChange}
+      onTagSelected={handleTagSelected}
     />
   );
 }
