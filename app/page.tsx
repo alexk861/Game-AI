@@ -6,7 +6,7 @@ import GameShell from '@/components/GameShell';
 import RevealScreen from '@/components/RevealScreen';
 import ResultsDebrief from '@/components/ResultsDebrief';
 import ArchiveExhausted from '@/components/ArchiveExhausted';
-import { copy, socialTensionFor, speedObservation, reasoningInsight } from '@/lib/copy';
+import { copy, socialTensionFor } from '@/lib/copy';
 import { analytics } from '@/lib/analytics';
 import {
   initTodaySession,
@@ -43,6 +43,7 @@ export default function Home() {
   const [completionMs, setCompletionMs] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const submittingRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const loadDailySet = useCallback(async (state: UncannyStorage, completed: boolean) => {
     try {
@@ -126,6 +127,14 @@ export default function Home() {
   }, [phase, sessionStartedAt]);
 
   useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     const initId = setTimeout(() => {
       const state = initTodaySession();
 
@@ -181,12 +190,21 @@ export default function Home() {
   }, [challenges, elapsedMs, setDate]);
 
   const submitGuess = useCallback(async (guess: 'ai' | 'real' | 'timeout') => {
-    if (submittingRef.current || (phase !== 'playing' && phase !== 'investigating')) return;
+    if (phase !== 'playing' && phase !== 'investigating') return;
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
     submittingRef.current = true;
 
     const challenge = challenges[currentIndex];
     if (!challenge) {
-      submittingRef.current = false;
+      if (abortControllerRef.current === abortController) {
+        submittingRef.current = false;
+      }
       return;
     }
 
@@ -204,6 +222,7 @@ export default function Home() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ challengeId: challenge.id, guess: effectiveGuess }),
+        signal: abortController.signal,
       });
 
       if (!res.ok) throw new Error('Failed to submit guess');
@@ -257,7 +276,11 @@ export default function Home() {
         setPhase('revealing');
         setTimeout(() => advanceToNext(updatedResults), REVEAL_DURATION);
       }, 2200);
-    } catch {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        return;
+      }
+
       const guessResult: GuessResult = {
         challengeId: challenge.id,
         guess,
@@ -299,7 +322,10 @@ export default function Home() {
         setTimeout(() => advanceToNext(updatedResults), REVEAL_DURATION);
       }, 2200);
     } finally {
-      submittingRef.current = false;
+      if (abortControllerRef.current === abortController) {
+        submittingRef.current = false;
+        abortControllerRef.current = null;
+      }
     }
   }, [phase, challenges, currentIndex, results, advanceToNext]);
 

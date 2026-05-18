@@ -10,19 +10,21 @@ export default function Profile() {
   const [stats, setStats] = useState<UncannyStorage | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setStats(initTodaySession());
-    setMounted(true);
-  }, []);
+  const [profileObservation, setProfileObservation] = useState({ text: "" });
 
-  const profileObservation = useMemo(() => {
+  useEffect(() => {
+    const statsData = initTodaySession();
+    setStats(statsData);
+    setMounted(true);
+
     const observations = [
       "You slow down on faces. You hesitated longer on realistic textures.",
       "You trust natural lighting. Symmetrical images fooled you more often.",
       "You were more accurate after the third image. Artificial skin textures stood out to you.",
       "You noticed details others missed. Symmetrical images fooled you more often."
     ];
-    return { text: observations[Math.floor(Math.random() * observations.length)] };
+    setProfileObservation({ text: observations[Math.floor(Math.random() * observations.length)] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Return a loading state or nothing while mounting to avoid hydration mismatch
@@ -58,7 +60,7 @@ export default function Profile() {
               <h2 className="font-sans text-3xl md:text-5xl font-bold uppercase tracking-tighter">YOUR PERCEPTION RECORD</h2>
             </div>
             <div className="font-mono text-xs text-outline flex gap-4">
-              <span>UPDATED AFTER TODAY'S CHALLENGE</span>
+              <span>UPDATED AFTER TODAY&apos;S CHALLENGE</span>
             </div>
           </div>
         </section>

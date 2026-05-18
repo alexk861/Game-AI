@@ -1,4 +1,5 @@
 import TopNav from '@/components/TopNav';
+import Link from 'next/link';
 
 export default function Login() {
   return (
@@ -59,9 +60,9 @@ export default function Login() {
               <button className="w-full h-16 border border-outline font-mono text-xs uppercase tracking-[0.3em] flex items-center justify-center transition-all duration-0 hover:bg-on-surface hover:text-background active:scale-[0.98]">
                 INITIATE AUTHENTICATION
               </button>
-              <a className="font-mono text-[10px] text-outline uppercase tracking-widest hover:text-on-surface transition-colors border-b border-transparent hover:border-on-surface pb-1" href="/">
+              <Link className="font-mono text-[10px] text-outline uppercase tracking-widest hover:text-on-surface transition-colors border-b border-transparent hover:border-on-surface pb-1" href="/">
                 PROCEED AS ANONYMOUS GUEST
-              </a>
+              </Link>
             </div>
           </div>
         </div>
