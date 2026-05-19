@@ -11,6 +11,7 @@ export async function GET() {
     .from('challenges')
     .select('id, image_url, difficulty, set_order')
     .eq('set_date', today)
+    .lte('set_order', 5)
     .order('set_order', { ascending: true });
 
   if (error) {

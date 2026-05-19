@@ -5,6 +5,10 @@
       "schedule": "0 0 * * *"
     },
     {
+      "path": "/api/cron/generate-ai-candidates",
+      "schedule": "0 2 * * *"
+    },
+    {
       "path": "/api/cron/auto-fill-content",
       "schedule": "0 3 * * *"
     }

@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { generateContentCandidates } from "@/lib/nanoBananaClient";
 import { buildNanoBananaPrompt } from "@/lib/nanoBananaInstructions";
-import { createClient } from "@supabase/supabase-js";
-
-// Initialize Supabase admin client (server-side only)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+import { getSupabaseAdmin } from "@/lib/supabase-server";
+import { isAdminAuthorized } from "@/lib/adminAuth";
 
 export async function POST(req: Request) {
+  if (!isAdminAuthorized(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { topic, details, taskId } = await req.json();
 
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     }));
 
     // 3. Save candidates to Supabase
-    const { data: insertedData, error } = await supabase
+    const { data: insertedData, error } = await getSupabaseAdmin()
       .from("content_candidates")
       .insert(dbCandidates)
       .select();

@@ -21,4 +21,4 @@ ADD COLUMN IF NOT EXISTS hook TEXT;
 ALTER TABLE public.content_candidates DROP CONSTRAINT IF EXISTS content_candidates_status_check;
 ALTER TABLE public.content_candidates
   ADD CONSTRAINT content_candidates_status_check
-  CHECK (status IN ('draft', 'review', 'approved', 'rejected', 'auto_approved'));
+  CHECK (status IN ('draft', 'review', 'approved', 'rejected', 'auto_approved', 'deleted'));

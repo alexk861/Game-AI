@@ -34,7 +34,7 @@ export const copy = {
       'compression seams detected',
       'reverse-search: REDACTED',
       'lighting anomaly in upper quadrant',
-      'observer consensus breaking',
+      'Most people missed this.',
       'look closer',
     ],
   },

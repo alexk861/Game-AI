@@ -68,19 +68,6 @@ export default function ArchiveExhausted() {
               </Link>
             </div>
           </div>
-          
-          {/* Debug Reset Button */}
-          <div className="mt-12 opacity-50 hover:opacity-100 transition-opacity pb-24">
-            <button 
-              onClick={() => {
-                localStorage.removeItem('uncanny_state');
-                window.location.reload();
-              }}
-              className="font-mono text-[10px] text-error border border-error/50 px-4 py-2 uppercase tracking-widest"
-            >
-              DEBUG: RESET STATE
-            </button>
-          </div>
         </section>
       </div>
 

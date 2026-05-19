@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { Challenge, GuessResult } from '@/lib/types';
 import { analytics } from '@/lib/analytics';
 import { copy, resultReflection, speedObservation, reasoningInsight } from '@/lib/copy';
+import { TIMER_DURATION_SECONDS } from '@/lib/gameConfig';
 
 interface ResultsDebriefProps {
   results: GuessResult[];
@@ -24,7 +25,7 @@ export default function ResultsDebrief({ results, challenges, streak, setDate, c
   const comparison = comparisonFor(score);
   const misleadingIndex = Math.max(0, results.findIndex(result => !result.correct));
   const misleadingChallenge = challenges[misleadingIndex] || challenges[0];
-  const speedObs = speedObservation(results, 12);
+  const speedObs = speedObservation(results, TIMER_DURATION_SECONDS);
   const tagInsight = reasoningInsight(results);
   const selectedResult = results[selectedIndex] || results[0];
   const selectedChallenge = challenges.find(challenge => challenge.id === selectedResult?.challengeId) || challenges[selectedIndex] || challenges[0];
@@ -56,11 +57,6 @@ export default function ResultsDebrief({ results, challenges, streak, setDate, c
         setTimeout(() => { button.textContent = copy.cta.export; }, 1800);
       }
     }
-  };
-
-  const handleRestartTest = () => {
-    localStorage.removeItem('uncanny_state');
-    window.location.reload();
   };
 
   return (
@@ -249,17 +245,6 @@ export default function ResultsDebrief({ results, challenges, streak, setDate, c
             <p className="text-sm leading-relaxed text-muted/65">
               Today&apos;s set is complete. The archive will refresh tomorrow.
             </p>
-          </div>
-          
-          {/* Debug restart button */}
-          <div className="mt-8 flex justify-center">
-            <button
-              type="button"
-              onClick={handleRestartTest}
-              className="border border-ai/60 px-4 py-2 text-center text-xs font-mono text-ai active:translate-y-px"
-            >
-              {copy.cta.restart}
-            </button>
           </div>
         </div>
       </section>

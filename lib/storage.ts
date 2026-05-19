@@ -102,6 +102,19 @@ export function addResult(result: GuessResult): UncannyStorage {
   return state;
 }
 
+export function updateLatestReasoningTag(tag: string): UncannyStorage {
+  const state = getStorage();
+  if (state.todayResults.length === 0) return state;
+
+  const latestIndex = state.todayResults.length - 1;
+  state.todayResults = state.todayResults.map((result, index) =>
+    index === latestIndex ? { ...result, reasoningTag: tag } : result
+  );
+
+  saveStorage(state);
+  return state;
+}
+
 export function completeSet(completedAt = Date.now()): UncannyStorage {
   const state = getStorage();
   const today = getToday();

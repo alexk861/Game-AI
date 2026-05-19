@@ -6,6 +6,8 @@ import Image from 'next/image';
 interface Candidate {
   id: string;
   source: string;
+  source_type?: string | null;
+  answer?: 'ai' | 'real' | null;
   source_photo_id: string;
   image_url: string;
   image_thumb_url: string;
@@ -17,6 +19,8 @@ interface Candidate {
   suspicious_score: number;
   difficulty_suggestion: string;
   suggested_context: string;
+  safety_status?: string | null;
+  safety_flags?: string[] | null;
   status: string;
   created_at: string;
 }
@@ -43,6 +47,11 @@ interface AutoFillResult {
   details: string[];
 }
 
+function candidateKind(candidate: Candidate): 'real' | 'ai' {
+  if (candidate.answer === 'ai' || candidate.source_type === 'ai_generated') return 'ai';
+  return 'real';
+}
+
 export default function AdminCandidatesPage() {
   const [secret, setSecret] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -56,15 +65,16 @@ export default function AdminCandidatesPage() {
   
   const [filterSource, setFilterSource] = useState<'all' | 'real' | 'ai'>('all');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [statusFilter, setStatusFilter] = useState<'review' | 'approved' | 'rejected' | 'auto_approved'>('review');
 
   const filteredAndSortedCandidates = useMemo(() => {
     let result = [...candidates];
     
     // Filter
     if (filterSource === 'real') {
-      result = result.filter(c => c.source === 'unsplash');
+      result = result.filter(c => candidateKind(c) === 'real');
     } else if (filterSource === 'ai') {
-      result = result.filter(c => c.source !== 'unsplash');
+      result = result.filter(c => candidateKind(c) === 'ai');
     }
 
     // Sort
@@ -83,7 +93,7 @@ export default function AdminCandidatesPage() {
     setError('');
     try {
       const [candidatesRes, autoApprovedRes] = await Promise.all([
-        fetch('/api/admin/candidates', {
+        fetch(`/api/admin/candidates?status=${statusFilter}`, {
           headers: { 'Authorization': `Bearer ${authSecret}` }
         }),
         fetch('/api/admin/candidates?status=auto_approved&count_only=true', {
@@ -109,7 +119,7 @@ export default function AdminCandidatesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [statusFilter]);
 
   useEffect(() => {
     const initId = setTimeout(() => {
@@ -159,11 +169,22 @@ export default function AdminCandidatesPage() {
         // Remove from list
         setCandidates(prev => prev.filter(c => c.id !== id));
         // Update counts optimistically
-        setCounts(prev => ({
-          ...prev,
-          review: prev.review - 1,
-          [action === 'approve' ? 'approved' : 'rejected']: prev[action === 'approve' ? 'approved' : 'rejected'] + 1
-        }));
+        setCounts(prev => {
+          const newCounts = { ...prev };
+          // Decrement current category
+          if (statusFilter === 'review') newCounts.review = Math.max(0, newCounts.review - 1);
+          else if (statusFilter === 'approved') newCounts.approved = Math.max(0, newCounts.approved - 1);
+          else if (statusFilter === 'rejected') newCounts.rejected = Math.max(0, newCounts.rejected - 1);
+          else if (statusFilter === 'auto_approved' && newCounts.auto_approved !== undefined) {
+             newCounts.auto_approved = Math.max(0, newCounts.auto_approved - 1);
+          }
+          
+          // Increment target category
+          if (action === 'approve') newCounts.approved += 1;
+          else if (action === 'reject') newCounts.rejected += 1;
+          
+          return newCounts;
+        });
       } else {
         alert(`Failed to ${action} candidate`);
       }
@@ -192,8 +213,11 @@ export default function AdminCandidatesPage() {
         // Update counts optimistically based on current tab
         setCounts(prev => {
           const newCounts = { ...prev };
-          if (status === 'approved') newCounts.approved = Math.max(0, newCounts.approved - 1);
-          else if (status === 'rejected') newCounts.rejected = Math.max(0, newCounts.rejected - 1);
+          if (statusFilter === 'approved') newCounts.approved = Math.max(0, newCounts.approved - 1);
+          else if (statusFilter === 'rejected') newCounts.rejected = Math.max(0, newCounts.rejected - 1);
+          else if (statusFilter === 'auto_approved' && newCounts.auto_approved !== undefined) {
+             newCounts.auto_approved = Math.max(0, newCounts.auto_approved - 1);
+          }
           else newCounts.review = Math.max(0, newCounts.review - 1);
           return newCounts;
         });
@@ -282,22 +306,34 @@ export default function AdminCandidatesPage() {
           </div>
           
           <div className="flex items-center gap-4 bg-white p-3 rounded-lg shadow-sm">
-            <div className="text-center px-3 border-r border-gray-200">
+            <button 
+              onClick={() => setStatusFilter('review')}
+              className={`text-center px-3 border-r border-gray-200 hover:bg-gray-50 cursor-pointer ${statusFilter === 'review' ? 'bg-yellow-50 rounded' : ''}`}
+            >
               <span className="block text-xs text-gray-500 uppercase">Review</span>
               <span className="block text-xl font-bold text-yellow-600">{counts.review}</span>
-            </div>
-            <div className="text-center px-3 border-r border-gray-200">
+            </button>
+            <button 
+              onClick={() => setStatusFilter('approved')}
+              className={`text-center px-3 border-r border-gray-200 hover:bg-gray-50 cursor-pointer ${statusFilter === 'approved' ? 'bg-green-50 rounded' : ''}`}
+            >
               <span className="block text-xs text-gray-500 uppercase">Approved</span>
               <span className="block text-xl font-bold text-green-600">{counts.approved}</span>
-            </div>
-            <div className="text-center px-3 border-r border-gray-200">
+            </button>
+            <button 
+              onClick={() => setStatusFilter('rejected')}
+              className={`text-center px-3 border-r border-gray-200 hover:bg-gray-50 cursor-pointer ${statusFilter === 'rejected' ? 'bg-red-50 rounded' : ''}`}
+            >
               <span className="block text-xs text-gray-500 uppercase">Rejected</span>
               <span className="block text-xl font-bold text-red-600">{counts.rejected}</span>
-            </div>
-            <div className="text-center px-3">
+            </button>
+            <button 
+              onClick={() => setStatusFilter('auto_approved')}
+              className={`text-center px-3 hover:bg-gray-50 cursor-pointer ${statusFilter === 'auto_approved' ? 'bg-amber-50 rounded' : ''}`}
+            >
               <span className="block text-xs text-gray-500 uppercase">Auto</span>
               <span className="block text-xl font-bold text-amber-600">{counts.auto_approved || 0}</span>
-            </div>
+            </button>
             <button 
               onClick={handleLogout}
               className="ml-4 text-sm text-gray-500 hover:text-gray-700 underline"
@@ -394,11 +430,11 @@ export default function AdminCandidatesPage() {
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex gap-2">
                       <span className={`inline-block text-xs px-2 py-1 rounded-full font-medium ${
-                        candidate.source === 'unsplash' 
-                          ? 'bg-blue-100 text-blue-800' 
+                        candidateKind(candidate) === 'real'
+                          ? 'bg-blue-100 text-blue-800'
                           : 'bg-purple-100 text-purple-800'
                       }`}>
-                        {candidate.source === 'unsplash' ? 'REAL' : 'AI'}
+                        {candidateKind(candidate) === 'real' ? 'REAL' : 'AI'}
                       </span>
                       <span className="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full font-medium">
                         {candidate.category}
@@ -421,8 +457,19 @@ export default function AdminCandidatesPage() {
                   </h3>
                   
                   <p className="text-xs text-gray-500 mb-2">
-                    Photo by {candidate.photographer_name}
+                    {candidateKind(candidate) === 'real'
+                      ? `Photo by ${candidate.photographer_name || 'Unknown'}`
+                      : `Generated candidate${candidate.source ? ` / ${candidate.source}` : ''}`}
                   </p>
+
+                  {candidateKind(candidate) === 'ai' && (
+                    <div className="mb-3 rounded border border-purple-100 bg-purple-50 p-2 text-xs text-purple-900">
+                      <div className="font-medium">Safety: {candidate.safety_status || 'unknown'}</div>
+                      {candidate.safety_flags && candidate.safety_flags.length > 0 && (
+                        <div className="mt-1 text-purple-700">{candidate.safety_flags.join(', ')}</div>
+                      )}
+                    </div>
+                  )}
                   
                   {candidate.created_at && (
                     <p className="text-xs text-gray-400 mb-4">
@@ -442,20 +489,26 @@ export default function AdminCandidatesPage() {
                   </div>
                   
                   <div className="mt-auto grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
-                    <button
-                      onClick={() => handleAction(candidate.id, 'reject')}
-                      disabled={actionLoading === candidate.id}
-                      className="py-2 px-4 rounded-md text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 disabled:opacity-50 transition-colors"
-                    >
-                      Reject
-                    </button>
-                    <button
-                      onClick={() => handleAction(candidate.id, 'approve')}
-                      disabled={actionLoading === candidate.id}
-                      className="py-2 px-4 rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-colors"
-                    >
-                      {actionLoading === candidate.id ? '...' : 'Approve'}
-                    </button>
+                    {statusFilter !== 'rejected' && (
+                      <button
+                        onClick={() => handleAction(candidate.id, 'reject')}
+                        disabled={actionLoading === candidate.id}
+                        className="py-2 px-4 rounded-md text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 disabled:opacity-50 transition-colors col-span-1"
+                        style={{ gridColumn: statusFilter === 'approved' || statusFilter === 'auto_approved' ? '1 / -1' : undefined }}
+                      >
+                        Reject
+                      </button>
+                    )}
+                    {(statusFilter !== 'approved' && statusFilter !== 'auto_approved') && (
+                      <button
+                        onClick={() => handleAction(candidate.id, 'approve')}
+                        disabled={actionLoading === candidate.id}
+                        className="py-2 px-4 rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-colors col-span-1"
+                        style={{ gridColumn: statusFilter === 'rejected' ? '1 / -1' : undefined }}
+                      >
+                        {actionLoading === candidate.id ? '...' : 'Approve'}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

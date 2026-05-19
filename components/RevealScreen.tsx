@@ -2,6 +2,7 @@
 
 import type { GuessResult, RevealData } from '@/lib/types';
 import { copy, revealConsensus, revealOrigin } from '@/lib/copy';
+import { TIMER_DURATION_SECONDS } from '@/lib/gameConfig';
 
 interface RevealScreenProps {
   imageUrl: string;
@@ -23,8 +24,7 @@ export default function RevealScreen({ imageUrl, data, result }: RevealScreenPro
     ? Math.round(((data.answer === 'ai' ? data.guesses_real : data.guesses_ai) / totalGuesses) * 100) 
     : 0;
   
-  // Game loop allows 10 seconds (10000ms). The `timeRemaining` is passed from SwipeCard.
-  const timeTaken = result?.timeRemaining !== undefined ? (10000 - result.timeRemaining) / 1000 : null;
+  const timeTaken = result?.timeRemaining !== undefined ? TIMER_DURATION_SECONDS - result.timeRemaining : null;
   const isFast = timeTaken !== null && timeTaken < 2.5;
 
   const isAI = data.answer === 'ai';

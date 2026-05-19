@@ -1,5 +1,6 @@
 import TopNav from '@/components/TopNav';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Login() {
   return (
@@ -10,10 +11,12 @@ export default function Login() {
 
       {/* Background Texture/Image */}
       <div className="fixed inset-0 z-0 opacity-20 filter grayscale contrast-150 pointer-events-none">
-        <img 
+        <Image 
           className="w-full h-full object-cover" 
           alt="Brutalist concrete structure" 
           src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoCTIFeyQOD4143dQb3_b6nMSWLzFq8bR0JwTVyg4DoSBAdoO3GN4Em0qgMi74Xhmr7JFq3Bh9FFSQsA5FnzJHUc1PbmaxwsW3BI_r145u9e7EfEjdGh1X4dy7trI0rh7QLQKSqwHXiGxBBGTdiKgmkMlAKQT1UVVCVeB_rpGcPrKi03lH5pv0sHfCj-cORZYm67rdTtZvdP2AJNReVeE4l3T4i2QdPgca-orQf4O546k414HllqbLtquCS7FbehvjlHbYtCqxiw2Q"
+          fill
+          sizes="100vw"
         />
       </div>
 
@@ -25,10 +28,10 @@ export default function Login() {
           {/* Headline Cluster */}
           <div className="flex flex-col items-center text-center gap-4">
             <h1 className="font-sans text-4xl md:text-5xl uppercase tracking-tighter text-on-surface font-bold">
-              ENTRY_PROTOCOL
+              PRIVATE ENTRY
             </h1>
             <p className="text-base text-outline max-w-md">
-              The archive requires an observer identity for calibration. 
+              This area is only for people reviewing the set. 
               <span className="text-on-error opacity-80 block mt-2 text-[11px] font-mono tracking-widest uppercase">
                 Unauthorised access to perception data is strictly monitored.
               </span>
@@ -75,7 +78,7 @@ export default function Login() {
           <span className="hidden md:inline text-surface-variant">|</span>
           <span className="text-on-surface">STATUS: UNCALIBRATED</span>
           <span className="hidden md:inline text-surface-variant">|</span>
-          <span>SIGNAL: STABLE</span>
+          <span>READY</span>
         </div>
         <div className="mt-4 md:mt-0 font-mono text-[10px] text-outline opacity-50 uppercase tracking-[0.1em]">
           © UNCANNY_SYS // VER_0.9.4

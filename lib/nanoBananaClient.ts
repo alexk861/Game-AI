@@ -1,11 +1,20 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
+let ai: GoogleGenAI | null = null;
+
+function getGeminiClient() {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY environment variable is not set");
+  }
+
+  ai ??= new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY,
+  });
+  return ai;
+}
 
 export async function generateContentCandidates(topic: string, prompt: string) {
-  const response = await ai.models.generateContent({
+  const response = await getGeminiClient().models.generateContent({
     model: "gemini-2.0-flash",
     contents: prompt,
     config: {

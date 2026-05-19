@@ -1,0 +1,2 @@
+export const TIMER_DURATION_SECONDS = 12;
+export const TOTAL_DAILY_CHALLENGES = 5;

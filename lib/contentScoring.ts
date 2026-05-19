@@ -69,3 +69,29 @@ export function scoreUnsplashCandidate(photo: UnsplashPhoto, category: string): 
     suggestedContext
   };
 }
+
+/**
+ * Evaluates an AI prompt for cinematic or professional stylistic elements.
+ * Returns a style penalty and a boolean indicating if it's overly cinematic.
+ */
+export function evaluateAIPromptStyle(prompt: string): { stylePenalty: number, isCinematic: boolean } {
+  const cinematicTerms = [
+    'futuristic', 'neon', 'cyberpunk', 'cinematic', 'masterpiece', 
+    'highly detailed', '8k', 'ultra detailed', 'sci-fi', 'glowing', 
+    'dramatic lighting', 'photorealistic art', 'studio lighting', 
+    'bokeh', 'professional', 'epic', 'award winning'
+  ];
+  
+  const lowerPrompt = prompt.toLowerCase();
+  let penalty = 0;
+  let isCinematic = false;
+
+  for (const term of cinematicTerms) {
+    if (lowerPrompt.includes(term)) {
+      penalty += 30;
+      isCinematic = true;
+    }
+  }
+
+  return { stylePenalty: Math.min(100, penalty), isCinematic };
+}

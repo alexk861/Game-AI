@@ -5,6 +5,7 @@ import BottomNav from '@/components/BottomNav';
 import { useState, useEffect } from 'react';
 import { initTodaySession } from '@/lib/storage';
 import { UncannyStorage } from '@/lib/types';
+import { TIMER_DURATION_SECONDS } from '@/lib/gameConfig';
 
 export default function Profile() {
   const [mounted, setMounted] = useState(false);
@@ -21,7 +22,7 @@ export default function Profile() {
         const correctCount = sessionStats.todayResults.filter(r => r.correct).length;
         const total = sessionStats.todayResults.length;
         const avgTimeRemaining = sessionStats.todayResults.reduce((sum, r) => sum + r.timeRemaining, 0) / total;
-        const avgResponseTime = 15 - avgTimeRemaining;
+        const avgResponseTime = TIMER_DURATION_SECONDS - avgTimeRemaining;
         
         let speedAnalysis = "";
         if (avgResponseTime <= 5) speedAnalysis = "You made quick, instinctive decisions. ";
@@ -29,7 +30,7 @@ export default function Profile() {
         else speedAnalysis = "You hesitated and scrutinized details before deciding. ";
         
         let accuracyAnalysis = "";
-        if (correctCount === total) accuracyAnalysis = "Your perception is perfectly calibrated today.";
+        if (correctCount === total) accuracyAnalysis = "You read every image correctly today.";
         else if (correctCount > total / 2) accuracyAnalysis = "You successfully distinguished most subjects.";
         else accuracyAnalysis = "The synthetic imagery frequently deceived you today.";
 
@@ -84,7 +85,7 @@ export default function Profile() {
           <section className="mb-20 flex flex-col items-center justify-center text-center border border-outline border-dashed p-16">
             <span className="material-symbols-outlined text-outline-variant text-5xl mb-4">person_off</span>
             <p className="font-mono text-sm text-outline uppercase tracking-widest mb-2">NO COMPLETED SETS YET</p>
-            <p className="text-outline-variant max-w-sm">Complete today&apos;s set to create your observer record and begin calibration.</p>
+            <p className="text-outline-variant max-w-sm">Complete today&apos;s set to create your record.</p>
           </section>
         ) : (
           <>
@@ -139,7 +140,7 @@ export default function Profile() {
                       ? `You noticed: ${res.reasoningTag}` 
                       : `You chose ${res.guess} • It was ${res.answer ?? '??'}`;
                       
-                    const responseTime = 15 - res.timeRemaining;
+                    const responseTime = TIMER_DURATION_SECONDS - res.timeRemaining;
                     const resultText = res.correct 
                       ? (responseTime <= 5 ? "Quick & correct" : "Calculated & correct")
                       : (responseTime <= 5 ? "Rushed & incorrect" : "Fooled despite scrutiny");

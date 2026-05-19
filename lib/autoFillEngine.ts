@@ -45,6 +45,12 @@ interface ContentCandidate {
   suggested_context: string;
   license_note: string;
   status: string;
+  answer?: string | null;
+  source_type?: string | null;
+  prompt_used?: string | null;
+  safety_status?: string | null;
+  safety_flags?: string[] | null;
+  auto_approve_eligible?: boolean | null;
 }
 
 interface ScheduleGap {
@@ -183,6 +189,22 @@ async function selectEligibleCandidates(
 
   for (const candidate of allCandidates || []) {
     if (selected.length >= limit) break;
+    const typedCandidate = candidate as ContentCandidate;
+    const isReal = typedCandidate.source === 'unsplash' || typedCandidate.source === 'real' || typedCandidate.answer === 'real';
+    const isAi = (
+      typedCandidate.source === 'nano_banana' &&
+      typedCandidate.source_type === 'ai_generated' &&
+      typedCandidate.answer === 'ai' &&
+      typedCandidate.safety_status === 'safe' &&
+      typedCandidate.auto_approve_eligible === true &&
+      typeof typedCandidate.prompt_used === 'string' &&
+      typedCandidate.prompt_used.trim().length > 0
+    );
+
+    if (!isReal && !isAi) {
+      skippedLowScore++;
+      continue;
+    }
 
     // Quality gate — scoring system: candidateScore base=50 (0-100), suspiciousScore base=0 (0-100)
     // Accept anything with reasonable quality; most normal Unsplash photos score ~50/0
@@ -191,8 +213,8 @@ async function selectEligibleCandidates(
       continue;
     }
 
-    // Attribution gate
-    if (!candidate.photographer_name) {
+    // Attribution gate applies to real/Unsplash rows only.
+    if (isReal && !candidate.photographer_name) {
       skippedNoAttribution++;
       continue;
     }
@@ -211,7 +233,7 @@ async function selectEligibleCandidates(
       continue; // Skip, try next candidate
     }
 
-    selected.push(candidate as ContentCandidate);
+    selected.push(typedCandidate);
     usedCategories.add(cat);
   }
 
@@ -261,8 +283,15 @@ async function scheduleCandidates(
   let candidateIndex = 0;
 
   // Separate pools by source and difficulty
-  const realCandidates = candidates.filter(c => c.source === 'unsplash' || c.source === 'real');
-  const aiCandidates = candidates.filter(c => c.source !== 'unsplash' && c.source !== 'real');
+  const realCandidates = candidates.filter(c => c.source === 'unsplash' || c.source === 'real' || c.answer === 'real');
+  const aiCandidates = candidates.filter(c =>
+    c.source === 'nano_banana' &&
+    c.source_type === 'ai_generated' &&
+    c.answer === 'ai' &&
+    c.safety_status === 'safe' &&
+    c.auto_approve_eligible === true &&
+    !!c.prompt_used
+  );
 
   const realEasy = realCandidates.filter(c => (c.difficulty_suggestion || 3) <= 2);
   const realMedium = realCandidates.filter(c => (c.difficulty_suggestion || 3) === 3);
@@ -369,7 +398,7 @@ async function scheduleCandidates(
         || `A ${picked.source === 'unsplash' ? 'real photo' : 'generated image'} from the ${picked.category || 'unknown'} category.`;
 
       // Assign answer based on source
-      const isReal = picked.source === 'unsplash' || picked.source === 'real';
+      const isReal = picked.source === 'unsplash' || picked.source === 'real' || picked.answer === 'real';
       const answer = isReal ? 'real' : 'ai';
       const sourceCredit = isReal ? `Unsplash / ${picked.photographer_name || 'Unknown'}` : (picked.photographer_name || 'AI Generated');
 
@@ -380,9 +409,9 @@ async function scheduleCandidates(
         answer: answer,
         difficulty: isReal ? Math.min(3, Math.max(1, targetDifficulty)) : Math.min(5, Math.max(1, targetDifficulty)), 
         context_short: contextShort,
-        ai_prompt: isReal ? null : (picked.query || null),
+        ai_prompt: isReal ? null : (picked.prompt_used || picked.query || null),
         source_credit: sourceCredit,
-        source_type: picked.source || 'unknown',
+        source_type: picked.source_type || picked.source || 'unknown',
         photographer_name: picked.photographer_name,
         photographer_url: picked.photographer_url,
         unsplash_url: picked.unsplash_url,

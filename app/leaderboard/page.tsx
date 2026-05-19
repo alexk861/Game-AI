@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import TopNav from '@/components/TopNav';
 import BottomNav from '@/components/BottomNav';
+import Image from 'next/image';
 
 interface LeaderboardData {
   total_guesses: number;
@@ -48,10 +49,10 @@ export default function Leaderboard() {
         {/* Header Section */}
         <section className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-outline pb-6">
           <div>
-            <span className="font-mono text-xs text-outline uppercase tracking-[0.2em] mb-2 block">Participant index</span>
+            <span className="font-mono text-xs text-outline uppercase tracking-[0.2em] mb-2 block">Aggregate results</span>
             <h2 className="font-sans text-3xl md:text-5xl font-bold tracking-tighter uppercase leading-none">TODAY&apos;S RESULTS</h2>
             <div className="mt-4 font-mono text-[10px] text-outline-variant italic">
-              * Based on global aggregate data
+              * Global metrics are live. Example participant rows are illustrative.
             </div>
           </div>
           <div className="flex flex-col gap-2 md:text-right">
@@ -73,7 +74,7 @@ export default function Leaderboard() {
             {/* Table Header */}
             <div className="col-span-12 grid grid-cols-12 py-4 border-b border-outline bg-surface-container-low px-4">
               <div className="col-span-2 font-mono text-[10px] uppercase text-outline tracking-widest">INDEX</div>
-              <div className="col-span-4 font-mono text-[10px] uppercase text-outline tracking-widest">PARTICIPANT</div>
+              <div className="col-span-4 font-mono text-[10px] uppercase text-outline tracking-widest">EXAMPLE</div>
               <div className="col-span-3 font-mono text-[10px] uppercase text-outline text-right tracking-widest">ACCURACY</div>
               <div className="col-span-3 font-mono text-[10px] uppercase text-outline text-right tracking-widest">CONFIDENCE</div>
             </div>
@@ -81,7 +82,7 @@ export default function Leaderboard() {
             {/* Row 01 */}
             <div className="col-span-12 grid grid-cols-12 py-6 border-b border-outline px-4 hover:bg-on-surface group transition-all duration-0 cursor-default">
               <div className="col-span-2 font-mono text-xs text-outline group-hover:text-background">01</div>
-              <div className="col-span-4 font-sans text-xl md:text-2xl font-semibold uppercase group-hover:text-background tracking-tighter">Elena Morris</div>
+              <div className="col-span-4 font-sans text-xl md:text-2xl font-semibold uppercase group-hover:text-background tracking-tighter">Illustrative row</div>
               <div className="col-span-3 font-mono text-xs text-right self-center group-hover:text-background">99.4%</div>
               <div className="col-span-3 font-mono text-xs text-right self-center group-hover:text-background text-outline">Consistent</div>
             </div>
@@ -101,7 +102,7 @@ export default function Leaderboard() {
             {/* Row 03 */}
             <div className="col-span-12 grid grid-cols-12 py-6 border-b border-outline px-4 hover:bg-on-surface group transition-all duration-0 cursor-default">
               <div className="col-span-2 font-mono text-xs text-outline group-hover:text-background">03</div>
-              <div className="col-span-4 font-sans text-xl md:text-2xl font-semibold uppercase group-hover:text-background tracking-tighter">Theo Park</div>
+              <div className="col-span-4 font-sans text-xl md:text-2xl font-semibold uppercase group-hover:text-background tracking-tighter">Illustrative row</div>
               <div className="col-span-3 font-mono text-xs text-right self-center group-hover:text-background">24.1%</div>
               <div className="col-span-3 font-mono text-xs text-right self-center group-hover:text-background text-outline">Hesitant</div>
             </div>
@@ -109,7 +110,7 @@ export default function Leaderboard() {
             {/* Row 04 */}
             <div className="col-span-12 grid grid-cols-12 py-6 border-b border-outline px-4 hover:bg-on-surface group transition-all duration-0 cursor-default">
               <div className="col-span-2 font-mono text-xs text-outline group-hover:text-background">04</div>
-              <div className="col-span-4 font-sans text-xl md:text-2xl font-semibold uppercase group-hover:text-background tracking-tighter">Hana Lee</div>
+              <div className="col-span-4 font-sans text-xl md:text-2xl font-semibold uppercase group-hover:text-background tracking-tighter">Illustrative row</div>
               <div className="col-span-3 font-mono text-xs text-right self-center group-hover:text-background">81.2%</div>
               <div className="col-span-3 font-mono text-xs text-right self-center group-hover:text-background text-outline-variant">Mixed</div>
             </div>
@@ -117,7 +118,7 @@ export default function Leaderboard() {
             {/* Row 05 */}
             <div className="col-span-12 grid grid-cols-12 py-6 border-b border-outline px-4 hover:bg-on-surface group transition-all duration-0 cursor-default">
               <div className="col-span-2 font-mono text-xs text-outline group-hover:text-background">05</div>
-              <div className="col-span-4 font-sans text-xl md:text-2xl font-semibold uppercase group-hover:text-background tracking-tighter">Marcus Hill</div>
+              <div className="col-span-4 font-sans text-xl md:text-2xl font-semibold uppercase group-hover:text-background tracking-tighter">Illustrative row</div>
               <div className="col-span-3 font-mono text-xs text-right self-center group-hover:text-background">12.3%</div>
               <div className="col-span-3 font-mono text-xs text-right self-center group-hover:text-background text-outline-variant">Uncertain</div>
             </div>
@@ -129,10 +130,12 @@ export default function Leaderboard() {
           <div className="aspect-[16/10] md:aspect-video border border-outline relative overflow-hidden group">
             {data?.most_misleading ? (
               <>
-                <img 
+                <Image 
                   className="w-full h-full object-cover grayscale opacity-70 group-hover:scale-105 transition-transform duration-1000" 
                   alt="Most misleading challenge" 
                   src={data.most_misleading.image_url}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
                 />
                 <div className="absolute inset-0 bg-outline/10 mix-blend-overlay"></div>
                 <div className="absolute top-4 right-4 bg-background/80 px-2 py-1 font-mono text-[10px] text-on-surface uppercase border border-outline">
@@ -140,10 +143,12 @@ export default function Leaderboard() {
                 </div>
               </>
             ) : (
-              <img 
+              <Image 
                 className="w-full h-full object-cover grayscale opacity-50 group-hover:scale-105 transition-transform duration-1000" 
                 alt="Awaiting data" 
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPRGk9rEkRcqSZP9dpqle6PpCLvtU1j8H69Q5EE_0Pj7Xnh2ZdxUxhnGgo41e9OgCPme3NK3OwzA_tBh52B6hEfJdc9XGadjBudF057FPmyd7pVkGUHWGueCm4YGdg9ieDJHopIDy1qQ0uYoMWQd0r_ZaARlK-BkgjBORohbLubnJ-r0UrnCcwsJZiFag9nTgojx6366p2OvfdyhXzcg-p7ncXsSvIukN_WpDg8aSwEcLgiru9VQegbSYMlNLZFhx2-C-CQcnojbap"
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
               />
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>

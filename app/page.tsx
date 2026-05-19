@@ -12,16 +12,18 @@ import {
   initTodaySession,
   markTodayStarted,
   addResult,
+  updateLatestReasoningTag,
   completeSet,
   hasCompletedToday,
   hasStartedToday,
   getResumeIndex,
 } from '@/lib/storage';
 import type { Challenge, GuessResult, GamePhase, RevealData, UncannyStorage } from '@/lib/types';
+import { TIMER_DURATION_SECONDS, TOTAL_DAILY_CHALLENGES } from '@/lib/gameConfig';
 
-const TIMER_DURATION = 12;
+const TIMER_DURATION = TIMER_DURATION_SECONDS;
 const REVEAL_DURATION = 5200;
-const TOTAL_CHALLENGES = 5;
+const TOTAL_CHALLENGES = TOTAL_DAILY_CHALLENGES;
 
 function socialHintFor(challenge: Challenge, index: number): string {
   return socialTensionFor(challenge.id, index);
@@ -44,6 +46,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const submittingRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const challengeStartedAtRef = useRef(0);
 
   const loadDailySet = useCallback(async (state: UncannyStorage, completed: boolean) => {
     try {
@@ -101,6 +104,7 @@ export default function Home() {
       }
 
       analytics.sessionStarted(data.date);
+      challengeStartedAtRef.current = Date.now();
       setPhase('playing');
       setTimerRunning(true);
 
@@ -179,6 +183,7 @@ export default function Home() {
       setRevealData(null);
       setShowReasoningTags(false);
       setTimerKey(previous => previous + 1);
+      challengeStartedAtRef.current = Date.now();
       setPhase('playing');
       setTimerRunning(true);
 
@@ -191,14 +196,15 @@ export default function Home() {
 
   const submitGuess = useCallback(async (guess: 'ai' | 'real' | 'timeout') => {
     if (phase !== 'playing' && phase !== 'investigating') return;
+    if (submittingRef.current) return;
+
+    submittingRef.current = true;
 
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
-
-    submittingRef.current = true;
 
     const challenge = challenges[currentIndex];
     if (!challenge) {
@@ -209,6 +215,10 @@ export default function Home() {
     }
 
     setTimerRunning(false);
+    const elapsedSeconds = Math.max(0, (Date.now() - challengeStartedAtRef.current) / 1000);
+    const timeRemaining = guess === 'timeout'
+      ? 0
+      : Math.max(0, Math.min(TIMER_DURATION, TIMER_DURATION - elapsedSeconds));
 
     if (navigator.vibrate) navigator.vibrate(30);
 
@@ -232,7 +242,7 @@ export default function Home() {
         challengeId: challenge.id,
         guess,
         correct: guess === 'timeout' ? false : data.correct,
-        timeRemaining: guess === 'timeout' ? 0 : TIMER_DURATION,
+        timeRemaining,
         answer: data.answer,
         imageUrl: challenge.image_url,
       };
@@ -251,7 +261,7 @@ export default function Home() {
       };
 
       if (guess !== 'timeout') {
-        analytics.guessSubmitted(challenge.id, guess, data.correct, TIMER_DURATION);
+        analytics.guessSubmitted(challenge.id, guess, data.correct, timeRemaining);
       }
       if (guessResult.correct) {
         analytics.resultCorrect(challenge.id, challenge.set_order, challenge.difficulty);
@@ -285,7 +295,7 @@ export default function Home() {
         challengeId: challenge.id,
         guess,
         correct: false,
-        timeRemaining: 0,
+        timeRemaining,
         answer: 'ai',
         imageUrl: challenge.image_url,
       };
@@ -350,6 +360,7 @@ export default function Home() {
       updated[updated.length - 1] = { ...updated[updated.length - 1], reasoningTag: tag };
       return updated;
     });
+    updateLatestReasoningTag(tag);
   }, []);
 
   if (phase === 'entry') {

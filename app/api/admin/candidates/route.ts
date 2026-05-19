@@ -21,12 +21,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const statusParam = request.nextUrl.searchParams.get('status') || 'review';
   const supabaseAdmin = getSupabaseAdmin();
   
   const { data, error } = await supabaseAdmin
     .from('content_candidates')
     .select('*')
-    .eq('status', 'review')
+    .eq('status', statusParam)
     .order('created_at', { ascending: false });
 
   if (error) {

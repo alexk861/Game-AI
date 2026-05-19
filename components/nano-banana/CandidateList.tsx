@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, X, Copy, ExternalLink, RefreshCw } from "lucide-react";
+import { Check, X, Copy, RefreshCw } from "lucide-react";
 
 interface Candidate {
   id: string;
@@ -26,9 +26,13 @@ export default function CandidateList({ candidates: initialCandidates }: Candida
   const handleUpdateStatus = async (id: string, status: "approved" | "rejected") => {
     setUpdatingId(id);
     try {
+      const adminSecret = localStorage.getItem("adminSecret");
       const res = await fetch("/api/nano-banana/update", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(adminSecret ? { Authorization: `Bearer ${adminSecret}` } : {}),
+        },
         body: JSON.stringify({ id, status }),
       });
       

@@ -22,10 +22,12 @@ export default function ContentGenerator({ onGenerated }: ContentGeneratorProps)
     setError("");
 
     try {
+      const adminSecret = localStorage.getItem("adminSecret");
       const res = await fetch("/api/nano-banana/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(adminSecret ? { Authorization: `Bearer ${adminSecret}` } : {}),
         },
         body: JSON.stringify({ topic, details }),
       });
