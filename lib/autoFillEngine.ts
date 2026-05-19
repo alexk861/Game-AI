@@ -8,14 +8,9 @@ import { SupabaseClient } from '@supabase/supabase-js';
 
 const LOOKAHEAD_DAYS = 3;
 const SAFETY_BUFFER = 15;
-const MAX_AUTO_APPROVE = 12;
-const SLOTS_PER_DAY = 5;
-
-/** Auto-fill populates slots 1–3 (easy/medium real Unsplash content).
- *  Slots 4–5 are reserved for manual curation / harder content,
- *  but will be filled as fallback if inventory is critically low. */
-const PRIMARY_SLOTS = [1, 2, 3];
-const FALLBACK_SLOTS = [4, 5];
+const MAX_AUTO_APPROVE = 30;
+const PLAYABLE_SLOTS = 5;
+const MAX_SLOTS = 9;
 
 /** Difficulty distribution per set_order slot */
 const SLOT_DIFFICULTY: Record<number, number> = {
@@ -24,6 +19,10 @@ const SLOT_DIFFICULTY: Record<number, number> = {
   3: 3, // Hard
   4: 4, // Hard
   5: 5, // Extreme / controversial
+  6: 3, // Hard (Bonus)
+  7: 4, // Hard (Bonus)
+  8: 4, // Hard (Bonus)
+  9: 5, // Extreme (Black Archive)
 };
 
 // ─── Types ───
@@ -112,6 +111,7 @@ async function checkScheduleGaps(
 
   const gaps: ScheduleGap[] = [];
   let totalScheduled = 0;
+  let playableScheduled = 0;
 
   for (const date of dates) {
     const dayRows = (existing || []).filter(
@@ -121,9 +121,10 @@ async function checkScheduleGaps(
       (r: { set_date: string; set_order: number }) => r.set_order
     );
     totalScheduled += filledSlots.length;
+    playableScheduled += filledSlots.filter((s: number) => s <= PLAYABLE_SLOTS).length;
 
     // Find missing slots (1-9)
-    const allSlots = Array.from({ length: SLOTS_PER_DAY }, (_, i) => i + 1);
+    const allSlots = Array.from({ length: MAX_SLOTS }, (_, i) => i + 1);
     const missingSlots = allSlots.filter(s => !filledSlots.includes(s));
 
     if (missingSlots.length > 0) {
@@ -132,7 +133,7 @@ async function checkScheduleGaps(
   }
 
   const requiredMinimum = SAFETY_BUFFER;
-  const deficit = Math.max(0, requiredMinimum - totalScheduled);
+  const deficit = Math.max(0, requiredMinimum - playableScheduled);
 
   return { totalScheduled, gaps, deficit };
 }
@@ -259,16 +260,20 @@ async function scheduleCandidates(
   let daysFilled = 0;
   let candidateIndex = 0;
 
-  // Sort candidates for strategic assignment
-  // Highest suspicious_score first → reserved for Black Archive / hard slots
-  const sortedByDifficulty = [...candidates].sort(
-    (a, b) => b.suspicious_score - a.suspicious_score || b.candidate_score - a.candidate_score
-  );
+  // Separate pools by source and difficulty
+  const realCandidates = candidates.filter(c => c.source === 'unsplash' || c.source === 'real');
+  const aiCandidates = candidates.filter(c => c.source !== 'unsplash' && c.source !== 'real');
 
-  // Separate pool: lower difficulty for easy slots, higher for hard slots
-  const easyPool = candidates.filter(c => (c.difficulty_suggestion || 3) <= 2);
-  const mediumPool = candidates.filter(c => (c.difficulty_suggestion || 3) === 3);
-  const hardPool = candidates.filter(c => (c.difficulty_suggestion || 3) >= 4);
+  const realEasy = realCandidates.filter(c => (c.difficulty_suggestion || 3) <= 2);
+  const realMedium = realCandidates.filter(c => (c.difficulty_suggestion || 3) === 3);
+  const realHard = realCandidates.filter(c => (c.difficulty_suggestion || 3) >= 4);
+
+  const aiEasy = aiCandidates.filter(c => (c.difficulty_suggestion || 3) <= 2);
+  const aiMedium = aiCandidates.filter(c => (c.difficulty_suggestion || 3) === 3);
+  const aiHard = aiCandidates.filter(c => (c.difficulty_suggestion || 3) >= 4);
+
+  // Slot 9 prefers highest suspicious_score
+  const aiSuspicious = [...aiCandidates].sort((a, b) => b.suspicious_score - a.suspicious_score);
 
   // Track used candidate IDs to avoid double-assignment
   const usedIds = new Set<string>();
@@ -276,30 +281,26 @@ async function scheduleCandidates(
   const usedCategoriesPerDay = new Map<string, string[]>();
 
   function pickCandidate(
-    pool: ContentCandidate[],
-    dayDate: string,
-    fallbackPool?: ContentCandidate[]
+    pools: ContentCandidate[][],
+    dayDate: string
   ): ContentCandidate | null {
     const dayCategories = usedCategoriesPerDay.get(dayDate) || [];
 
-    // Try primary pool first, then fallback
-    for (const p of [pool, fallbackPool || []]) {
-      for (const c of p) {
+    for (const pool of pools) {
+      for (const c of pool) {
         if (usedIds.has(c.id)) continue;
-
-        // Diversity: avoid same category appearing more than twice per day
         const catOccurrences = dayCategories.filter(cat => cat === c.category).length;
         if (catOccurrences >= 2) continue;
-
         return c;
       }
     }
 
-    // Last resort: any unused candidate
-    for (const c of candidates) {
-      if (!usedIds.has(c.id)) return c;
+    // Relaxed diversity fallback
+    for (const pool of pools) {
+      for (const c of pool) {
+        if (!usedIds.has(c.id)) return c;
+      }
     }
-
     return null;
   }
 
@@ -315,54 +316,73 @@ async function scheduleCandidates(
   for (const gap of gaps) {
     let daySlotsFilled = 0;
 
-    // Determine which missing slots to fill.
-    // Primary: fill slots 1-3 first (safe Unsplash real content).
-    // Fallback: fill slots 4-9 only if still have candidates AND deficit is high.
-    const primaryMissing = gap.missingSlots.filter(s => PRIMARY_SLOTS.includes(s));
-    const fallbackMissing = gap.missingSlots.filter(s => FALLBACK_SLOTS.includes(s));
-
-    // Always fill primary slots
-    const slotsToFill = [...primaryMissing];
-
-    // Fill fallback slots only if we still have candidates left
-    if (candidates.length - usedIds.size > primaryMissing.length) {
-      slotsToFill.push(...fallbackMissing);
-    }
-
-    for (const slot of slotsToFill) {
+    for (const slot of gap.missingSlots) {
       if (usedIds.size >= candidates.length) break; // No more candidates
       if (candidateIndex >= MAX_AUTO_APPROVE) break; // Hard limit
 
       const targetDifficulty = SLOT_DIFFICULTY[slot] || 3;
       let picked: ContentCandidate | null = null;
 
-      // Slot 9 = Black Archive: pick highest suspicious_score candidate
-      if (slot === 9) {
-        picked = pickCandidate(sortedByDifficulty, gap.date);
-      } else if (targetDifficulty <= 2) {
-        picked = pickCandidate(easyPool, gap.date, mediumPool);
-      } else if (targetDifficulty === 3) {
-        picked = pickCandidate(mediumPool, gap.date, hardPool);
-      } else {
-        picked = pickCandidate(hardPool, gap.date, mediumPool);
+      // Unsplash / real: preferred slots 1,2,3
+      if (slot >= 1 && slot <= 3) {
+        if (targetDifficulty <= 2) {
+          picked = pickCandidate([realEasy, realMedium, realHard], gap.date);
+        } else {
+          picked = pickCandidate([realMedium, realHard, realEasy], gap.date);
+        }
+      } 
+      // AI generated: preferred slots 4,5,6,7,8,9
+      else if (slot >= 4 && slot <= 9) {
+        if (slot === 9) {
+          picked = pickCandidate([aiSuspicious, aiHard, aiMedium, aiEasy], gap.date);
+        } else if (targetDifficulty <= 2) {
+          picked = pickCandidate([aiEasy, aiMedium, aiHard], gap.date);
+        } else if (targetDifficulty === 3) {
+          picked = pickCandidate([aiMedium, aiHard, aiEasy], gap.date);
+        } else {
+          picked = pickCandidate([aiHard, aiMedium, aiEasy], gap.date);
+        }
+
+        // Emergency fallback for playable slots 4-5
+        if (!picked) {
+          if (slot === 4 || slot === 5) {
+            // Fallback to real content
+            if (targetDifficulty <= 2) {
+              picked = pickCandidate([realEasy, realMedium, realHard], gap.date);
+            } else {
+              picked = pickCandidate([realMedium, realHard, realEasy], gap.date);
+            }
+            if (picked) {
+              details.push(`CRITICAL: Used Unsplash fallback for playable slot ${slot} on ${gap.date}`);
+              console.warn(`[auto-fill] CRITICAL: Used Unsplash fallback for playable slot ${slot} on ${gap.date}`);
+            }
+          } else {
+            details.push(`Warning: hard slot ${slot} missing generated candidates on ${gap.date}`);
+            console.warn(`[auto-fill] Warning: hard slot ${slot} missing generated candidates on ${gap.date}`);
+          }
+        }
       }
 
       if (!picked) continue;
 
-      // Generate context fallback
       const contextShort = picked.suggested_context
-        || `A real photo from the ${picked.category || 'unknown'} category.`;
+        || `A ${picked.source === 'unsplash' ? 'real photo' : 'generated image'} from the ${picked.category || 'unknown'} category.`;
+
+      // Assign answer based on source
+      const isReal = picked.source === 'unsplash' || picked.source === 'real';
+      const answer = isReal ? 'real' : 'ai';
+      const sourceCredit = isReal ? `Unsplash / ${picked.photographer_name || 'Unknown'}` : (picked.photographer_name || 'AI Generated');
 
       rowsToInsert.push({
         set_date: gap.date,
         set_order: slot,
         image_url: picked.image_url,
-        answer: 'real',
-        difficulty: Math.min(5, Math.max(1, targetDifficulty)),
+        answer: answer,
+        difficulty: isReal ? Math.min(3, Math.max(1, targetDifficulty)) : Math.min(5, Math.max(1, targetDifficulty)), 
         context_short: contextShort,
-        ai_prompt: null,
-        source_credit: `Unsplash / ${picked.photographer_name}`,
-        source_type: 'unsplash',
+        ai_prompt: isReal ? null : (picked.query || null),
+        source_credit: sourceCredit,
+        source_type: picked.source || 'unknown',
         photographer_name: picked.photographer_name,
         photographer_url: picked.photographer_url,
         unsplash_url: picked.unsplash_url,
@@ -376,7 +396,12 @@ async function scheduleCandidates(
 
     if (daySlotsFilled > 0) {
       daysFilled++;
-      details.push(`${gap.date}: scheduled ${daySlotsFilled} challenges (slots: ${slotsToFill.filter(s => rowsToInsert.some(r => r.set_date === gap.date && r.set_order === s)).join(', ')})`);
+      const filledSlotNums = rowsToInsert
+        .filter(r => r.set_date === gap.date)
+        .map(r => r.set_order as number);
+      // Get unique slots just in case
+      const uniqueSlots = Array.from(new Set(filledSlotNums)).sort();
+      details.push(`${gap.date}: scheduled ${daySlotsFilled} challenges (slots: ${uniqueSlots.join(', ')})`);
     }
   }
 

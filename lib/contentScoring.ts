@@ -24,13 +24,11 @@ export function scoreUnsplashCandidate(photo: UnsplashPhoto, category: string): 
   const aiKeywords = ['surreal', 'bizarre', 'unusual', 'strange', 'impossible', 'magic', 'dream', 'illusion', 'weird', 'liminal'];
   const realKeywords = ['nature', 'wildlife', 'cityscape', 'street', 'documentary', 'raw', 'unfiltered'];
   
-  let keywordMatchCount = 0;
   for (const keyword of aiKeywords) {
     if (description.includes(keyword)) {
       suspiciousScore += 15;
       candidateScore += 10;
       difficultySuggestion += 1;
-      keywordMatchCount++;
     }
   }
   

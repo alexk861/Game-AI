@@ -11,14 +11,16 @@ interface ReasoningTagsProps {
 export default function ReasoningTags({ visible, onTagSelected }: ReasoningTagsProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const [hidden, setHidden] = useState(false);
+  const [prevVisible, setPrevVisible] = useState(visible);
 
   // Reset state when visibility changes
-  useEffect(() => {
+  if (visible !== prevVisible) {
+    setPrevVisible(visible);
     if (visible) {
       setSelected(null);
       setHidden(false);
     }
-  }, [visible]);
+  }
 
   // Auto-hide after selection (quick dismiss)
   useEffect(() => {

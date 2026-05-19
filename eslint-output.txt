@@ -1,0 +1,74 @@
+
+C:\Users\1\Downloads\Projects\AI_Game_Studio_Agent_Team\mvp\app\layout.tsx
+  47:9  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font  @next/next/no-page-custom-font
+
+C:\Users\1\Downloads\Projects\AI_Game_Studio_Agent_Team\mvp\app\leaderboard\page.tsx
+   52:115  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  132:17   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  143:15   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  150:122  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+
+C:\Users\1\Downloads\Projects\AI_Game_Studio_Agent_Team\mvp\app\login\page.tsx
+  13:9  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\1\Downloads\Projects\AI_Game_Studio_Agent_Team\mvp\app\profile\page.tsx
+   5:10  warning  'useMemo' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+  17:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\1\Downloads\Projects\AI_Game_Studio_Agent_Team\mvp\app\profile\page.tsx:17:5
+  15 |   useEffect(() => {
+  16 |     const statsData = initTodaySession();
+> 17 |     setStats(statsData);
+     |     ^^^^^^^^ Avoid calling setState() directly within an effect
+  18 |     setMounted(true);
+  19 |
+  20 |     const observations = [  react-hooks/set-state-in-effect
+  27:5   warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+
+C:\Users\1\Downloads\Projects\AI_Game_Studio_Agent_Team\mvp\components\ArchiveExhausted.tsx
+  39:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  67:27  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+
+C:\Users\1\Downloads\Projects\AI_Game_Studio_Agent_Team\mvp\components\ReasoningTags.tsx
+  18:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\1\Downloads\Projects\AI_Game_Studio_Agent_Team\mvp\components\ReasoningTags.tsx:18:7
+  16 |   useEffect(() => {
+  17 |     if (visible) {
+> 18 |       setSelected(null);
+     |       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  19 |       setHidden(false);
+  20 |     }
+  21 |   }, [visible]);  react-hooks/set-state-in-effect
+
+C:\Users\1\Downloads\Projects\AI_Game_Studio_Agent_Team\mvp\components\ResultsDebrief.tsx
+  132:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  176:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  250:20  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+
+C:\Users\1\Downloads\Projects\AI_Game_Studio_Agent_Team\mvp\components\RevealScreen.tsx
+  36:9  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\1\Downloads\Projects\AI_Game_Studio_Agent_Team\mvp\components\SwipeCard.tsx
+  149:9  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\1\Downloads\Projects\AI_Game_Studio_Agent_Team\mvp\generate-noise.mjs
+  97:5  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\1\Downloads\Projects\AI_Game_Studio_Agent_Team\mvp\lib\contentScoring.ts
+  33:7  warning  'keywordMatchCount' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 19 problems (6 errors, 13 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.

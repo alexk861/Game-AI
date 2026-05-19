@@ -64,7 +64,7 @@ export default function ArchiveExhausted() {
                 VIEW RECORD
               </Link>
               <Link href="/leaderboard" className="border border-outline-variant px-12 py-4 font-mono text-xs uppercase tracking-[0.2em] text-outline hover:text-on-surface transition-all duration-0 active:scale-95 inline-block">
-                VIEW TODAY'S RESULTS
+                VIEW TODAY&apos;S RESULTS
               </Link>
             </div>
           </div>

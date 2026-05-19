@@ -174,6 +174,39 @@ export default function AdminCandidatesPage() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this candidate? It will be soft-deleted and removed from this list.')) return;
+    
+    setActionLoading(id);
+    try {
+      const res = await fetch(`/api/admin/candidates/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${secret}`
+        }
+      });
+      
+      if (res.ok) {
+        // Remove from list
+        setCandidates(prev => prev.filter(c => c.id !== id));
+        // Update counts optimistically based on current tab
+        setCounts(prev => {
+          const newCounts = { ...prev };
+          if (status === 'approved') newCounts.approved = Math.max(0, newCounts.approved - 1);
+          else if (status === 'rejected') newCounts.rejected = Math.max(0, newCounts.rejected - 1);
+          else newCounts.review = Math.max(0, newCounts.review - 1);
+          return newCounts;
+        });
+      } else {
+        alert('Failed to delete candidate');
+      }
+    } catch (err) {
+      alert(`Error: ${err}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleAutoFill = async () => {
     const confirmed = window.confirm(
       'This will safely auto-approve only high-quality candidates if future content is missing.\n\nContinue?'
@@ -340,9 +373,21 @@ export default function AdminCandidatesPage() {
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />
-                  <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">
+                  <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm z-10">
                     {candidate.difficulty_suggestion}
                   </div>
+                  <button
+                    onClick={() => handleDelete(candidate.id)}
+                    disabled={actionLoading === candidate.id}
+                    className="absolute top-2 left-2 bg-red-600/80 text-white p-1.5 rounded hover:bg-red-700 backdrop-blur-sm transition-colors z-10 disabled:opacity-50"
+                    title="Soft Delete"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 6h18"></path>
+                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                    </svg>
+                  </button>
                 </div>
                 
                 <div className="p-4 flex-grow flex flex-col">

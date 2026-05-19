@@ -94,8 +94,11 @@ function createPNG(width, height, rgbaData) {
     const chunk = Buffer.alloc(4 + type.length + data.length + 4);
     chunk.writeUInt32BE(data.length, 0);
     chunk.write(type, 4);
-    data.copy ? data.copy(chunk, 4 + type.length) : Buffer.from(data).copy(chunk, 4 + type.length);
-    const crc = crc32(chunk, 4, type.length + data.length);
+    if (data.copy) {
+      data.copy(chunk, 4 + type.length);
+    } else {
+      Buffer.from(data).copy(chunk, 4 + type.length);
+    }    const crc = crc32(chunk, 4, type.length + data.length);
     chunk.writeInt32BE(crc, 4 + type.length + data.length);
     return chunk;
   }

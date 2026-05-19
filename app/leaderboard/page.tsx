@@ -49,7 +49,7 @@ export default function Leaderboard() {
         <section className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-outline pb-6">
           <div>
             <span className="font-mono text-xs text-outline uppercase tracking-[0.2em] mb-2 block">Participant index</span>
-            <h2 className="font-sans text-3xl md:text-5xl font-bold tracking-tighter uppercase leading-none">TODAY'S RESULTS</h2>
+            <h2 className="font-sans text-3xl md:text-5xl font-bold tracking-tighter uppercase leading-none">TODAY&apos;S RESULTS</h2>
             <div className="mt-4 font-mono text-[10px] text-outline-variant italic">
               * Based on global aggregate data
             </div>
@@ -147,7 +147,7 @@ export default function Leaderboard() {
               />
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>
-            <div className="absolute bottom-4 left-4 font-mono text-[10px] text-primary tracking-[0.2em] uppercase">Today's most misleading image</div>
+            <div className="absolute bottom-4 left-4 font-mono text-[10px] text-primary tracking-[0.2em] uppercase">Today&apos;s most misleading image</div>
           </div>
           
           <div className="flex flex-col justify-center border-l-0 md:border-l border-outline pt-4 md:pt-0 pl-0 md:pl-8">

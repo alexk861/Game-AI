@@ -2,29 +2,44 @@
 
 import TopNav from '@/components/TopNav';
 import BottomNav from '@/components/BottomNav';
-import { useMemo, useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { initTodaySession } from '@/lib/storage';
 import { UncannyStorage } from '@/lib/types';
 
 export default function Profile() {
-  const [stats, setStats] = useState<UncannyStorage | null>(null);
   const [mounted, setMounted] = useState(false);
-
+  const [stats, setStats] = useState<UncannyStorage | null>(null);
   const [profileObservation, setProfileObservation] = useState({ text: "" });
 
   useEffect(() => {
-    const statsData = initTodaySession();
-    setStats(statsData);
-    setMounted(true);
+    const timer = setTimeout(() => {
+      const sessionStats = initTodaySession();
+      setStats(sessionStats);
+      
+      let tendencyText = "Insufficient data to establish behavioral tendencies.";
+      if (sessionStats.todayResults && sessionStats.todayResults.length > 0) {
+        const correctCount = sessionStats.todayResults.filter(r => r.correct).length;
+        const total = sessionStats.todayResults.length;
+        const avgTimeRemaining = sessionStats.todayResults.reduce((sum, r) => sum + r.timeRemaining, 0) / total;
+        const avgResponseTime = 15 - avgTimeRemaining;
+        
+        let speedAnalysis = "";
+        if (avgResponseTime <= 5) speedAnalysis = "You made quick, instinctive decisions. ";
+        else if (avgResponseTime <= 10) speedAnalysis = "You took measured time before deciding. ";
+        else speedAnalysis = "You hesitated and scrutinized details before deciding. ";
+        
+        let accuracyAnalysis = "";
+        if (correctCount === total) accuracyAnalysis = "Your perception is perfectly calibrated today.";
+        else if (correctCount > total / 2) accuracyAnalysis = "You successfully distinguished most subjects.";
+        else accuracyAnalysis = "The synthetic imagery frequently deceived you today.";
 
-    const observations = [
-      "You slow down on faces. You hesitated longer on realistic textures.",
-      "You trust natural lighting. Symmetrical images fooled you more often.",
-      "You were more accurate after the third image. Artificial skin textures stood out to you.",
-      "You noticed details others missed. Symmetrical images fooled you more often."
-    ];
-    setProfileObservation({ text: observations[Math.floor(Math.random() * observations.length)] });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        tendencyText = speedAnalysis + accuracyAnalysis;
+      }
+      
+      setProfileObservation({ text: tendencyText });
+      setMounted(true);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   // Return a loading state or nothing while mounting to avoid hydration mismatch
@@ -119,20 +134,24 @@ export default function Profile() {
               {stats?.todayResults && stats.todayResults.length > 0 ? (
                 <div className="divide-y divide-outline-variant">
                   {stats.todayResults.map((res, i) => {
-                    const titleOpts = ["Mountain sunset", "Apartment mirror", "Kitchen portrait", "Airport window", "Winter street", "Subway platform", "Surveillance hallway"];
-                    const fakeTitle = titleOpts[i % titleOpts.length];
+                    const recordTitle = `Image ${String(i + 1).padStart(2, '0')}`;
+                    const secondaryNote = res.reasoningTag 
+                      ? `You noticed: ${res.reasoningTag}` 
+                      : `You chose ${res.guess} • It was ${res.answer ?? '??'}`;
+                      
+                    const responseTime = 15 - res.timeRemaining;
                     const resultText = res.correct 
-                      ? (["You got this right", "Your instinct was correct", "You noticed the details", "You trusted this correctly"][i%4]) 
-                      : (["This one fooled you", "Most people believed this too", "You trusted the lighting", "You doubted a real photograph"][i%4]);
+                      ? (responseTime <= 5 ? "Quick & correct" : "Calculated & correct")
+                      : (responseTime <= 5 ? "Rushed & incorrect" : "Fooled despite scrutiny");
                     
                     return (
                       <div key={res.challengeId} className="py-4 md:py-6 flex items-center justify-between group hover:px-2 transition-all duration-300 cursor-pointer">
                         <div className="flex items-center gap-4 md:gap-8">
                           <span className="font-mono text-xs text-outline">0{i+1}</span>
                           <div className="flex flex-col">
-                            <span className="font-sans text-sm md:text-base font-semibold uppercase tracking-widest">{fakeTitle}</span>
+                            <span className="font-sans text-sm md:text-base font-semibold uppercase tracking-widest">{recordTitle}</span>
                             <span className="font-mono text-[10px] text-outline uppercase mt-1">
-                              You chose {res.guess} • It was {res.answer ?? '??'}
+                              {secondaryNote}
                             </span>
                           </div>
                         </div>

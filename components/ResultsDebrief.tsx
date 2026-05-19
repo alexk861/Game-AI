@@ -247,7 +247,7 @@ export default function ResultsDebrief({ results, challenges, streak, setDate, c
 
           <div className="mt-4 border-t border-outline-variant/50 pt-6 text-center">
             <p className="text-sm leading-relaxed text-muted/65">
-              Today's set is complete. The archive will refresh tomorrow.
+              Today&apos;s set is complete. The archive will refresh tomorrow.
             </p>
           </div>
           
