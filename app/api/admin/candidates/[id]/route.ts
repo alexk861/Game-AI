@@ -14,6 +14,28 @@ function isAuthorized(request: NextRequest) {
   return false;
 }
 
+async function checkRejectionReasonColumn(supabase: any): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('content_candidates')
+      .select('rejection_reason')
+      .limit(1);
+
+    if (error) {
+      if (
+        error.code === 'PGRST100' || 
+        (error.message && error.message.includes('rejection_reason')) ||
+        (error.message && error.message.includes('column'))
+      ) {
+        return false;
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function DELETE(
   request: NextRequest, 
   { params }: { params: Promise<{ id: string }> }
@@ -28,14 +50,22 @@ export async function DELETE(
   }
 
   const supabaseAdmin = getSupabaseAdmin();
+  const hasRejectionReason = await checkRejectionReasonColumn(supabaseAdmin);
   
+  const updatePayload: Record<string, any> = {
+    status: 'deleted',
+    reviewed_at: new Date().toISOString()
+  };
+
+  if (hasRejectionReason) {
+    updatePayload.rejection_reason = 'manual_delete';
+  } else {
+    console.warn(`[admin/candidates] rejection_reason column is missing from DB. Skipping setting this field.`);
+  }
+
   const { error } = await supabaseAdmin
     .from('content_candidates')
-    .update({ 
-      status: 'deleted', 
-      rejection_reason: 'manual_delete',
-      reviewed_at: new Date().toISOString()
-    })
+    .update(updatePayload)
     .eq('id', id);
 
   if (error) {

@@ -17,42 +17,43 @@ export async function POST(request: NextRequest) {
 
     const supabaseAdmin = getSupabaseAdmin();
 
-    const { data, error } = await supabaseAdmin.rpc('submit_guess', {
-      challenge_uuid: challengeId,
-      guess_type: guess,
-    });
+    const { data: challenge, error: fetchError } = await supabaseAdmin
+      .from('challenges')
+      .select('answer, context_short, ai_prompt, source_credit, photographer_name, photographer_url, unsplash_url, guesses_ai, guesses_real')
+      .eq('id', challengeId)
+      .single();
 
-    if (error) {
-      console.error('Guess submission error:', error);
+    if (fetchError || !challenge) {
+      console.error('Error fetching challenge for guess:', fetchError);
       return NextResponse.json(
-        { error: 'Failed to submit guess' },
-        { status: 500 }
+        { error: 'Challenge not found' },
+        { status: 404 }
       );
     }
 
-    const result = data as {
-      answer: string;
-      context_short: string;
-      ai_prompt: string | null;
-      source_credit: string | null;
-      photographer_name: string | null;
-      photographer_url: string | null;
-      unsplash_url: string | null;
-      guesses_ai: number;
-      guesses_real: number;
-    };
+    const incrementField = guess === 'ai' ? 'guesses_ai' : 'guesses_real';
+    const updatedCount = (challenge[incrementField] || 0) + 1;
+
+    const { error: updateError } = await supabaseAdmin
+      .from('challenges')
+      .update({ [incrementField]: updatedCount })
+      .eq('id', challengeId);
+
+    if (updateError) {
+      console.error('Error updating guess counter:', updateError);
+    }
 
     return NextResponse.json({
-      correct: result.answer === guess,
-      answer: result.answer,
-      context_short: result.context_short,
-      ai_prompt: result.ai_prompt,
-      source_credit: result.source_credit,
-      photographer_name: result.photographer_name,
-      photographer_url: result.photographer_url,
-      unsplash_url: result.unsplash_url,
-      guesses_ai: result.guesses_ai,
-      guesses_real: result.guesses_real,
+      correct: challenge.answer === guess,
+      answer: challenge.answer,
+      context_short: challenge.context_short,
+      ai_prompt: challenge.ai_prompt,
+      source_credit: challenge.source_credit,
+      photographer_name: challenge.photographer_name,
+      photographer_url: challenge.photographer_url,
+      unsplash_url: challenge.unsplash_url,
+      guesses_ai: guess === 'ai' ? updatedCount : (challenge.guesses_ai || 0),
+      guesses_real: guess === 'real' ? updatedCount : (challenge.guesses_real || 0),
     });
   } catch {
     return NextResponse.json(

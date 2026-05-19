@@ -50,3 +50,5 @@ graphify-out/
 .graphify_python
 .graphify_uncached.txt
 .graphify_semantic.json
+
+.env*.local
