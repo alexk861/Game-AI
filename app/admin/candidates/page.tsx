@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 
 interface Candidate {
@@ -18,6 +18,7 @@ interface Candidate {
   difficulty_suggestion: string;
   suggested_context: string;
   status: string;
+  created_at: string;
 }
 
 interface Counts {
@@ -52,6 +53,30 @@ export default function AdminCandidatesPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [autoFillLoading, setAutoFillLoading] = useState(false);
   const [autoFillResult, setAutoFillResult] = useState<AutoFillResult | null>(null);
+  
+  const [filterSource, setFilterSource] = useState<'all' | 'real' | 'ai'>('all');
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+
+  const filteredAndSortedCandidates = useMemo(() => {
+    let result = [...candidates];
+    
+    // Filter
+    if (filterSource === 'real') {
+      result = result.filter(c => c.source === 'unsplash');
+    } else if (filterSource === 'ai') {
+      result = result.filter(c => c.source !== 'unsplash');
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      // Handle cases where created_at might be missing
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    });
+
+    return result;
+  }, [candidates, filterSource, sortOrder]);
 
   const fetchData = useCallback(async (authSecret: string) => {
     setLoading(true);
@@ -249,32 +274,63 @@ export default function AdminCandidatesPage() {
           </div>
         </div>
 
-        {/* Auto-fill action */}
-        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          <button
-            onClick={handleAutoFill}
-            disabled={autoFillLoading}
-            className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-4 py-2 rounded-md hover:bg-amber-100 disabled:opacity-50 transition-colors"
-          >
-            {autoFillLoading ? 'Filling...' : 'Fill missing archive days'}
-          </button>
-          {autoFillResult && (
-            <span className={`text-xs ${autoFillResult.success ? 'text-green-700' : 'text-red-700'}`}>
-              {autoFillResult.triggered
-                ? `Scheduled ${autoFillResult.scheduled_count} · Approved ${autoFillResult.auto_approved_count} · ${autoFillResult.days_filled} day(s)`
-                : 'No fill needed — future schedule is healthy.'}
-              {autoFillResult.errors.length > 0 && ` · Errors: ${autoFillResult.errors.join(', ')}`}
-            </span>
-          )}
+        {/* Auto-fill action and Filters */}
+        <div className="mb-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <button
+              onClick={handleAutoFill}
+              disabled={autoFillLoading}
+              className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-4 py-2 rounded-md hover:bg-amber-100 disabled:opacity-50 transition-colors"
+            >
+              {autoFillLoading ? 'Filling...' : 'Fill missing archive days'}
+            </button>
+            {autoFillResult && (
+              <span className={`text-xs ${autoFillResult.success ? 'text-green-700' : 'text-red-700'}`}>
+                {autoFillResult.triggered
+                  ? `Scheduled ${autoFillResult.scheduled_count} · Approved ${autoFillResult.auto_approved_count} · ${autoFillResult.days_filled} day(s)`
+                  : 'No fill needed — future schedule is healthy.'}
+                {autoFillResult.errors.length > 0 && ` · Errors: ${autoFillResult.errors.join(', ')}`}
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 bg-white p-2 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium text-gray-700">Source:</label>
+              <select 
+                value={filterSource} 
+                onChange={(e) => setFilterSource(e.target.value as 'all' | 'real' | 'ai')}
+                className="text-sm border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 py-1"
+              >
+                <option value="all">All</option>
+                <option value="real">Real (Unsplash)</option>
+                <option value="ai">AI Generated</option>
+              </select>
+            </div>
+            
+            <div className="h-4 w-px bg-gray-300"></div>
+            
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium text-gray-700">Sort by Adding Date:</label>
+              <select 
+                value={sortOrder} 
+                onChange={(e) => setSortOrder(e.target.value as 'desc' | 'asc')}
+                className="text-sm border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 py-1"
+              >
+                <option value="desc">Newest First</option>
+                <option value="asc">Oldest First</option>
+              </select>
+            </div>
+          </div>
         </div>
 
-        {candidates.length === 0 ? (
+        {filteredAndSortedCandidates.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-12 text-center text-gray-500">
-            No candidates pending review.
+            No candidates matching the criteria.
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {candidates.map(candidate => (
+            {filteredAndSortedCandidates.map(candidate => (
               <div key={candidate.id} className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 flex flex-col">
                 <div className="relative h-48 w-full bg-gray-200">
                   <Image
@@ -319,9 +375,15 @@ export default function AdminCandidatesPage() {
                     {candidate.suggested_context}
                   </h3>
                   
-                  <p className="text-xs text-gray-500 mb-4">
+                  <p className="text-xs text-gray-500 mb-2">
                     Photo by {candidate.photographer_name}
                   </p>
+                  
+                  {candidate.created_at && (
+                    <p className="text-xs text-gray-400 mb-4">
+                      Added: {new Date(candidate.created_at).toLocaleDateString()}
+                    </p>
+                  )}
                   
                   <div className="grid grid-cols-2 gap-2 mb-4 text-xs bg-gray-50 p-2 rounded">
                     <div>
