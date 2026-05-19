@@ -24,6 +24,22 @@ interface Counts {
   review: number;
   approved: number;
   rejected: number;
+  auto_approved?: number;
+}
+
+interface AutoFillResult {
+  success: boolean;
+  triggered: boolean;
+  scheduled_count: number;
+  auto_approved_count: number;
+  days_filled: number;
+  skipped_low_score: number;
+  skipped_duplicates: number;
+  skipped_no_attribution: number;
+  schedule_before: number;
+  schedule_after: number;
+  errors: string[];
+  details: string[];
 }
 
 export default function AdminCandidatesPage() {
@@ -34,21 +50,29 @@ export default function AdminCandidatesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [autoFillLoading, setAutoFillLoading] = useState(false);
+  const [autoFillResult, setAutoFillResult] = useState<AutoFillResult | null>(null);
 
   const fetchData = useCallback(async (authSecret: string) => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/admin/candidates', {
-        headers: {
-          'Authorization': `Bearer ${authSecret}`
-        }
-      });
+      const [candidatesRes, autoApprovedRes] = await Promise.all([
+        fetch('/api/admin/candidates', {
+          headers: { 'Authorization': `Bearer ${authSecret}` }
+        }),
+        fetch('/api/admin/candidates?status=auto_approved&count_only=true', {
+          headers: { 'Authorization': `Bearer ${authSecret}` }
+        }).catch(() => null)
+      ]);
 
-      if (res.ok) {
-        const data = await res.json();
+      if (candidatesRes.ok) {
+        const data = await candidatesRes.json();
         setCandidates(data.candidates || []);
-        setCounts(data.counts || { review: 0, approved: 0, rejected: 0 });
+        const autoCount = autoApprovedRes?.ok
+          ? ((await autoApprovedRes.json()).counts?.auto_approved ?? data.counts?.auto_approved ?? 0)
+          : 0;
+        setCounts({ review: 0, approved: 0, rejected: 0, ...data.counts, auto_approved: autoCount });
         setIsAuthenticated(true);
       } else {
         setIsAuthenticated(false);
@@ -125,6 +149,37 @@ export default function AdminCandidatesPage() {
     }
   };
 
+  const handleAutoFill = async () => {
+    const confirmed = window.confirm(
+      'This will safely auto-approve only high-quality candidates if future content is missing.\n\nContinue?'
+    );
+    if (!confirmed) return;
+
+    setAutoFillLoading(true);
+    setAutoFillResult(null);
+    try {
+      const res = await fetch('/api/admin/auto-fill-content', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${secret}` }
+      });
+      const data = await res.json();
+      setAutoFillResult(data);
+      if (data.success) {
+        fetchData(secret);
+      }
+    } catch (err) {
+      setAutoFillResult({
+        success: false, triggered: false, scheduled_count: 0,
+        auto_approved_count: 0, days_filled: 0, skipped_low_score: 0,
+        skipped_duplicates: 0, skipped_no_attribution: 0,
+        schedule_before: 0, schedule_after: 0,
+        errors: [String(err)], details: []
+      });
+    } finally {
+      setAutoFillLoading(false);
+    }
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
@@ -177,9 +232,13 @@ export default function AdminCandidatesPage() {
               <span className="block text-xs text-gray-500 uppercase">Approved</span>
               <span className="block text-xl font-bold text-green-600">{counts.approved}</span>
             </div>
-            <div className="text-center px-3">
+            <div className="text-center px-3 border-r border-gray-200">
               <span className="block text-xs text-gray-500 uppercase">Rejected</span>
               <span className="block text-xl font-bold text-red-600">{counts.rejected}</span>
+            </div>
+            <div className="text-center px-3">
+              <span className="block text-xs text-gray-500 uppercase">Auto</span>
+              <span className="block text-xl font-bold text-amber-600">{counts.auto_approved || 0}</span>
             </div>
             <button 
               onClick={handleLogout}
@@ -188,6 +247,25 @@ export default function AdminCandidatesPage() {
               Logout
             </button>
           </div>
+        </div>
+
+        {/* Auto-fill action */}
+        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <button
+            onClick={handleAutoFill}
+            disabled={autoFillLoading}
+            className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-4 py-2 rounded-md hover:bg-amber-100 disabled:opacity-50 transition-colors"
+          >
+            {autoFillLoading ? 'Filling...' : 'Fill missing archive days'}
+          </button>
+          {autoFillResult && (
+            <span className={`text-xs ${autoFillResult.success ? 'text-green-700' : 'text-red-700'}`}>
+              {autoFillResult.triggered
+                ? `Scheduled ${autoFillResult.scheduled_count} · Approved ${autoFillResult.auto_approved_count} · ${autoFillResult.days_filled} day(s)`
+                : 'No fill needed — future schedule is healthy.'}
+              {autoFillResult.errors.length > 0 && ` · Errors: ${autoFillResult.errors.join(', ')}`}
+            </span>
+          )}
         </div>
 
         {candidates.length === 0 ? (

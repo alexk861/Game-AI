@@ -48,12 +48,18 @@ export async function GET(request: NextRequest) {
     .select('*', { count: 'exact', head: true })
     .eq('status', 'rejected');
 
+  const { count: autoApprovedCount } = await supabaseAdmin
+    .from('content_candidates')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'auto_approved');
+
   return NextResponse.json({ 
     candidates: data || [], 
     counts: {
       review: reviewCount || 0,
       approved: approvedCount || 0,
-      rejected: rejectedCount || 0
+      rejected: rejectedCount || 0,
+      auto_approved: autoApprovedCount || 0
     }
   });
 }
