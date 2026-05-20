@@ -19,10 +19,15 @@ export async function POST(request: NextRequest) {
 
     const report = await generateAiCandidates(getSupabaseAdmin(), { requestedCount });
     return NextResponse.json(report);
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('[admin/generate-ai-candidates] Fatal error:', err);
+    const message = err instanceof Error
+      ? err.message
+      : (typeof err === 'object' && err !== null && 'message' in err)
+        ? String((err as Record<string, unknown>).message)
+        : JSON.stringify(err);
     return NextResponse.json(
-      { error: 'Internal server error', message: err instanceof Error ? err.message : String(err) },
+      { error: 'Internal server error', message },
       { status: 500 }
     );
   }

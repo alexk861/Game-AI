@@ -16,6 +16,11 @@ export async function GET(req: Request) {
 
   } catch (err: unknown) {
     console.error('Error in cron job:', err);
-    return NextResponse.json({ error: (err as Error).message || 'Internal error' }, { status: 500 });
+    const message = err instanceof Error
+      ? err.message
+      : (typeof err === 'object' && err !== null && 'message' in err)
+        ? String((err as Record<string, unknown>).message)
+        : JSON.stringify(err);
+    return NextResponse.json({ error: message || 'Internal error' }, { status: 500 });
   }
 }

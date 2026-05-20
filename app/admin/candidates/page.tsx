@@ -282,13 +282,22 @@ export default function AdminCandidatesPage() {
         body: JSON.stringify({ count: 5 }),
       });
       const data = await res.json();
-      setAiGenResult(data);
-      if (data.generated > 0) {
-        fetchData(secret);
+      if (!res.ok || data.error) {
+        setAiGenResult({
+          message: data.message || data.error || `HTTP ${res.status}`,
+          generated: 0,
+          requested: 0,
+          current_backlog: 0,
+        });
+      } else {
+        setAiGenResult(data);
+        if (data.generated > 0) {
+          fetchData(secret);
+        }
       }
     } catch (err) {
       setAiGenResult({
-        message: `Error: ${err}`,
+        message: `Network error: ${err instanceof Error ? err.message : String(err)}`,
         generated: 0,
         requested: 0,
         current_backlog: 0,

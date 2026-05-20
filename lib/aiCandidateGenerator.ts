@@ -49,7 +49,7 @@ export async function generateAiCandidates(
     .gte('suspicious_score', 70)
     .in('status', ['review', 'approved', 'auto_approved']);
 
-  if (countError) throw countError;
+  if (countError) throw new Error(`Backlog count query failed: ${countError.message}`);
 
   const currentBacklog = count || 0;
   let countToGenerate = options.requestedCount ?? 0;
@@ -71,7 +71,7 @@ export async function generateAiCandidates(
     .order('created_at', { ascending: false })
     .limit(20);
 
-  if (realError) throw realError;
+  if (realError) throw new Error(`Real images query failed: ${realError.message}`);
 
   const prompts = await generatePromptsForImages(countToGenerate, realImages || []);
   let successCount = 0;
