@@ -28,19 +28,27 @@ if (!url || !key) {
 
 const supabase = createClient(url, key);
 
-async function query() {
-  const { data, error } = await supabase
-    .from('challenges')
-    .select('*');
+async function test() {
+  const row = {
+    set_date: '2026-05-30',
+    set_order: 11,
+    image_url: 'https://example.com/test-11.jpg',
+    answer: 'ai',
+    difficulty: 5,
+    context_short: 'Test slot 11',
+    source_credit: 'Test credit'
+  };
 
+  console.log("Attempting to insert order=11 row...");
+  const { data, error } = await supabase.from('challenges').insert([row]).select();
   if (error) {
-    console.error("Error querying challenges:", error);
+    console.error("FAILED to insert order 11:", error.message);
   } else {
-    console.log(`Found ${data.length} challenges:`);
-    data.forEach(c => {
-      console.log(`ID: ${c.id}, Date: ${c.set_date}, Order: ${c.set_order}, Answer: ${c.answer}, URL: ${c.image_url}`);
-    });
+    console.log("SUCCESS inserted order 11! Data:", data);
+    // Cleanup
+    await supabase.from('challenges').delete().eq('id', data[0].id);
+    console.log("Cleaned up successfully.");
   }
 }
 
-query().catch(console.error);
+test().catch(console.error);

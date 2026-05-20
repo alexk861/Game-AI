@@ -1,7 +1,7 @@
+import { createClient } from '@supabase/supabase-js';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Parse .env.local manually
 const envPath = path.join(process.cwd(), '.env.local');
 const envContent = fs.readFileSync(envPath, 'utf8');
 const env = {};
@@ -20,27 +20,25 @@ envContent.split('\n').forEach(line => {
 
 const url = env.NEXT_PUBLIC_SUPABASE_URL;
 const key = env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!url || !key) {
-  console.error("Missing Supabase credentials in .env.local");
-  process.exit(1);
-}
-
 const supabase = createClient(url, key);
 
-async function query() {
-  const { data, error } = await supabase
-    .from('challenges')
-    .select('*');
+async function testRpcs() {
+  const rpcs = [
+    { name: 'exec_sql', args: { sql: 'SELECT 1' } },
+    { name: 'execute_sql', args: { sql: 'SELECT 1' } },
+    { name: 'run_sql', args: { sql: 'SELECT 1' } },
+    { name: 'exec_query', args: { query: 'SELECT 1' } }
+  ];
 
-  if (error) {
-    console.error("Error querying challenges:", error);
-  } else {
-    console.log(`Found ${data.length} challenges:`);
-    data.forEach(c => {
-      console.log(`ID: ${c.id}, Date: ${c.set_date}, Order: ${c.set_order}, Answer: ${c.answer}, URL: ${c.image_url}`);
-    });
+  for (const rpc of rpcs) {
+    console.log(`Testing RPC '${rpc.name}'...`);
+    const { data, error } = await supabase.rpc(rpc.name, rpc.args);
+    if (error) {
+      console.log(`  ❌ ${rpc.name} failed:`, error.message);
+    } else {
+      console.log(`  ✅ ${rpc.name} SUCCEEDED:`, data);
+    }
   }
 }
 
-query().catch(console.error);
+testRpcs().catch(console.error);

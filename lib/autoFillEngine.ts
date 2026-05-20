@@ -10,7 +10,7 @@ const LOOKAHEAD_DAYS = 3;
 const SAFETY_BUFFER = 15;
 const MAX_AUTO_APPROVE = 30;
 const PLAYABLE_SLOTS = 5;
-const MAX_SLOTS = 11;
+const MAX_SLOTS = process.env.MAX_SCHEDULE_SLOTS ? parseInt(process.env.MAX_SCHEDULE_SLOTS, 10) : 11;
 
 /** Difficulty distribution per set_order slot */
 const SLOT_DIFFICULTY: Record<number, number> = {
@@ -53,6 +53,18 @@ interface ContentCandidate {
   safety_status?: string | null;
   safety_flags?: string[] | null;
   auto_approve_eligible?: boolean | null;
+  composition_fingerprint?: string | null;
+  emotional_fingerprint?: string | null;
+  lighting_fingerprint?: string | null;
+  perspective_fingerprint?: string | null;
+  scene_fingerprint?: string | null;
+  object_fingerprint?: string | null;
+  texture_fingerprint?: string | null;
+  consensus_confidence?: number | null;
+  disagreement_score?: number | null;
+  slow_burn_score?: number | null;
+  curator_locked?: boolean | null;
+  anomaly_tier?: number | null;
 }
 
 interface ScheduleGap {
@@ -260,6 +272,16 @@ async function selectEligibleCandidates(
       continue;
     }
 
+    if (candidate.status === 'deleted' || candidate.status === 'rejected') {
+      skippedLowScore++;
+      continue;
+    }
+
+    if (candidate.safety_status === 'unsafe') {
+      skippedLowScore++;
+      continue;
+    }
+
     // Quality gate
     if (candidate.candidate_score < 40) {
       skippedLowScore++;
@@ -438,7 +460,7 @@ async function scheduleCandidates(
   let daysFilled = 0;
   let candidateIndex = 0;
 
-  // Separate pools by source and difficulty
+  // Separate pools by source
   const realCandidates = candidates.filter(c => c.source === 'unsplash' || c.source === 'real' || c.answer === 'real');
   const aiCandidates = candidates.filter(c =>
     c.source === 'nano_banana' &&
@@ -449,43 +471,142 @@ async function scheduleCandidates(
     !!c.prompt_used
   );
 
-  const realEasy = realCandidates.filter(c => (c.difficulty_suggestion || 3) <= 2);
-  const realMedium = realCandidates.filter(c => (c.difficulty_suggestion || 3) === 3);
-  const realHard = realCandidates.filter(c => (c.difficulty_suggestion || 3) >= 4);
+  // Evolve Paced Tension Difficulty Pools
+  // Easy: high consensus (or suggestion <= 2)
+  const realEasy = realCandidates.filter(c => (c.consensus_confidence !== undefined && c.consensus_confidence !== null ? c.consensus_confidence >= 0.70 : (c.difficulty_suggestion || 3) <= 2))
+    .sort((a, b) => (b.consensus_confidence || 0) - (a.consensus_confidence || 0));
 
-  const aiEasy = aiCandidates.filter(c => (c.difficulty_suggestion || 3) <= 2);
-  const aiMedium = aiCandidates.filter(c => (c.difficulty_suggestion || 3) === 3);
-  const aiHard = aiCandidates.filter(c => (c.difficulty_suggestion || 3) >= 4);
+  // Medium: moderate disagreement (or suggestion = 3)
+  const realMedium = realCandidates.filter(c => {
+    const dis = c.disagreement_score;
+    return (dis !== undefined && dis !== null ? (dis >= 0.30 && dis <= 0.70) : (c.difficulty_suggestion || 3) === 3);
+  }).sort((a, b) => (b.disagreement_score || 0) - (a.disagreement_score || 0));
 
-  // Slot 9 prefers highest suspicious_score
-  const aiSuspicious = [...aiCandidates].sort((a, b) => b.suspicious_score - a.suspicious_score);
+  // Hard: high disagreement (or suggestion >= 4)
+  const realHard = realCandidates.filter(c => {
+    const dis = c.disagreement_score;
+    return (dis !== undefined && dis !== null ? dis > 0.70 : (c.difficulty_suggestion || 3) >= 4);
+  }).sort((a, b) => (b.disagreement_score || 0) - (a.disagreement_score || 0));
+
+  // AI Easy
+  const aiEasy = aiCandidates.filter(c => (c.consensus_confidence !== undefined && c.consensus_confidence !== null ? c.consensus_confidence >= 0.70 : (c.difficulty_suggestion || 3) <= 2))
+    .sort((a, b) => (b.consensus_confidence || 0) - (a.consensus_confidence || 0));
+
+  // AI Medium
+  const aiMedium = aiCandidates.filter(c => {
+    const dis = c.disagreement_score;
+    return (dis !== undefined && dis !== null ? (dis >= 0.30 && dis <= 0.70) : (c.difficulty_suggestion || 3) === 3);
+  }).sort((a, b) => (b.disagreement_score || 0) - (a.disagreement_score || 0));
+
+  // AI Hard
+  const aiHard = aiCandidates.filter(c => {
+    const dis = c.disagreement_score;
+    return (dis !== undefined && dis !== null ? dis > 0.70 : (c.difficulty_suggestion || 3) >= 4);
+  }).sort((a, b) => (b.disagreement_score || 0) - (a.disagreement_score || 0));
 
   // Track used candidate IDs to avoid double-assignment
   const usedIds = new Set<string>();
   // Track used categories per day for diversity
   const usedCategoriesPerDay = new Map<string, string[]>();
+  // Visual Entropy: Track composition, lighting, and scene fingerprints scheduled per day Date
+  const usedFingerprintsPerDay = new Map<string, {
+    composition: Set<string>;
+    lighting: Set<string>;
+    scene: Set<string>;
+  }>();
 
   function pickCandidate(
-    pools: ContentCandidate[][],
-    dayDate: string
+    preferredSource: 'real' | 'ai',
+    targetDifficulty: number,
+    dayDate: string,
+    slotNumber: number
   ): ContentCandidate | null {
     const dayCategories = usedCategoriesPerDay.get(dayDate) || [];
+    const dayFingerprints = usedFingerprintsPerDay.get(dayDate) || {
+      composition: new Set<string>(),
+      lighting: new Set<string>(),
+      scene: new Set<string>()
+    };
 
-    for (const pool of pools) {
+    // Slot 11 Anomaly Rule: Prefer anomaly_tier >= 2 first!
+    if (slotNumber === 11) {
+      const anomalies = aiCandidates
+        .filter(c => (c.anomaly_tier || 0) >= 2 && !usedIds.has(c.id))
+        .sort((a, b) => (b.anomaly_tier || 0) - (a.anomaly_tier || 0));
+      if (anomalies.length > 0) {
+        return anomalies[0];
+      }
+    }
+
+    const realPools = targetDifficulty <= 2 
+      ? [realEasy, realMedium, realHard] 
+      : targetDifficulty === 3 
+        ? [realMedium, realHard, realEasy] 
+        : [realHard, realMedium, realEasy];
+
+    const aiPools = targetDifficulty <= 2 
+      ? [aiEasy, aiMedium, aiHard] 
+      : targetDifficulty === 3 
+        ? [aiMedium, aiHard, aiEasy] 
+        : [aiHard, aiMedium, aiEasy];
+
+    const preferredPools = preferredSource === 'real' ? realPools : aiPools;
+    const fallbackPools = preferredSource === 'real' ? aiPools : realPools;
+
+    // 1st pass: Preferred pools with Category diversity & Visual Entropy Protection
+    for (const pool of preferredPools) {
       for (const c of pool) {
         if (usedIds.has(c.id)) continue;
         const catOccurrences = dayCategories.filter(cat => cat === c.category).length;
         if (catOccurrences >= 2) continue;
+
+        // Visual Entropy checking
+        if (c.composition_fingerprint && dayFingerprints.composition.has(c.composition_fingerprint)) continue;
+        if (c.lighting_fingerprint && dayFingerprints.lighting.has(c.lighting_fingerprint)) continue;
+        if (c.scene_fingerprint && dayFingerprints.scene.has(c.scene_fingerprint)) continue;
+
         return c;
       }
     }
 
-    // Relaxed diversity fallback
-    for (const pool of pools) {
+    // 2nd pass: Preferred pools with Visual Entropy Protection only
+    for (const pool of preferredPools) {
+      for (const c of pool) {
+        if (usedIds.has(c.id)) continue;
+        if (c.composition_fingerprint && dayFingerprints.composition.has(c.composition_fingerprint)) continue;
+        if (c.lighting_fingerprint && dayFingerprints.lighting.has(c.lighting_fingerprint)) continue;
+        if (c.scene_fingerprint && dayFingerprints.scene.has(c.scene_fingerprint)) continue;
+        return c;
+      }
+    }
+
+    // 3rd pass: Preferred pools without restrictions
+    for (const pool of preferredPools) {
       for (const c of pool) {
         if (!usedIds.has(c.id)) return c;
       }
     }
+
+    // 4th pass: Fallback pools with Category & Visual Entropy
+    for (const pool of fallbackPools) {
+      for (const c of pool) {
+        if (usedIds.has(c.id)) continue;
+        const catOccurrences = dayCategories.filter(cat => cat === c.category).length;
+        if (catOccurrences >= 2) continue;
+        if (c.composition_fingerprint && dayFingerprints.composition.has(c.composition_fingerprint)) continue;
+        if (c.lighting_fingerprint && dayFingerprints.lighting.has(c.lighting_fingerprint)) continue;
+        if (c.scene_fingerprint && dayFingerprints.scene.has(c.scene_fingerprint)) continue;
+        return c;
+      }
+    }
+
+    // 5th pass: Fallback pools without restrictions
+    for (const pool of fallbackPools) {
+      for (const c of pool) {
+        if (!usedIds.has(c.id)) return c;
+      }
+    }
+
     return null;
   }
 
@@ -494,6 +615,16 @@ async function scheduleCandidates(
     const cats = usedCategoriesPerDay.get(dayDate) || [];
     cats.push(c.category || 'unknown');
     usedCategoriesPerDay.set(dayDate, cats);
+
+    const fingerprints = usedFingerprintsPerDay.get(dayDate) || {
+      composition: new Set<string>(),
+      lighting: new Set<string>(),
+      scene: new Set<string>()
+    };
+    if (c.composition_fingerprint) fingerprints.composition.add(c.composition_fingerprint);
+    if (c.lighting_fingerprint) fingerprints.lighting.add(c.lighting_fingerprint);
+    if (c.scene_fingerprint) fingerprints.scene.add(c.scene_fingerprint);
+    usedFingerprintsPerDay.set(dayDate, fingerprints);
   }
 
   const rowsToInsert: Record<string, unknown>[] = [];
@@ -506,66 +637,32 @@ async function scheduleCandidates(
       if (candidateIndex >= MAX_AUTO_APPROVE) break; // Hard limit
 
       const targetDifficulty = SLOT_DIFFICULTY[slot] || 3;
-      let picked: ContentCandidate | null = null;
-
-      // Unsplash / real: preferred slots 1,2,3
-      if (slot >= 1 && slot <= 3) {
-        if (targetDifficulty <= 2) {
-          picked = pickCandidate([realEasy, realMedium, realHard], gap.date);
-        } else {
-          picked = pickCandidate([realMedium, realHard, realEasy], gap.date);
-        }
-      } 
-      // AI generated: preferred slots 4,5,6,7,8,9,10,11
-      else if (slot >= 4 && slot <= 11) {
-        if (slot === 9 || slot === 10 || slot === 11) {
-          picked = pickCandidate([aiSuspicious, aiHard, aiMedium, aiEasy], gap.date);
-        } else if (targetDifficulty <= 2) {
-          picked = pickCandidate([aiEasy, aiMedium, aiHard], gap.date);
-        } else if (targetDifficulty === 3) {
-          picked = pickCandidate([aiMedium, aiHard, aiEasy], gap.date);
-        } else {
-          picked = pickCandidate([aiHard, aiMedium, aiEasy], gap.date);
-        }
-
-        // Emergency fallback for playable slots 4-5
-        if (!picked) {
-          if (slot === 4 || slot === 5) {
-            // Fallback to real content
-            if (targetDifficulty <= 2) {
-              picked = pickCandidate([realEasy, realMedium, realHard], gap.date);
-            } else {
-              picked = pickCandidate([realMedium, realHard, realEasy], gap.date);
-            }
-            if (picked) {
-              details.push(`CRITICAL: Used Unsplash fallback for playable slot ${slot} on ${gap.date}`);
-              console.warn(`[auto-fill] CRITICAL: Used Unsplash fallback for playable slot ${slot} on ${gap.date}`);
-            }
-          } else {
-            details.push(`Warning: hard slot ${slot} missing generated candidates on ${gap.date}`);
-            console.warn(`[auto-fill] Warning: hard slot ${slot} missing generated candidates on ${gap.date}`);
-          }
-        }
-      }
+      
+      // Determine preferred source based on set_order segment rules:
+      // Slots 1-3: Prefer Real.
+      // Slots 4-5: Prefer AI.
+      // Slots 6-11: Prefer AI.
+      const preferredSource = (slot >= 1 && slot <= 3) ? 'real' : 'ai';
+      
+      const picked = pickCandidate(preferredSource, targetDifficulty, gap.date, slot);
 
       if (!picked) {
-        if (slot >= 1 && slot <= 3) {
-          const remainingReal = realCandidates.filter(c => !usedIds.has(c.id)).length;
-          details.push(`[scheduling-failure] Slot ${slot} on ${gap.date} remained unfilled: preferred real candidates pool exhausted (remaining real candidates in selection batch: ${remainingReal}).`);
-        } else {
-          const remainingAi = aiCandidates.filter(c => !usedIds.has(c.id)).length;
-          details.push(`[scheduling-failure] Slot ${slot} on ${gap.date} remained unfilled: preferred AI candidates pool exhausted (remaining AI candidates in selection batch: ${remainingAi}).`);
-        }
+        details.push(`[scheduling-failure] Slot ${slot} on ${gap.date} remained unfilled: preferred and fallback candidate pools exhausted.`);
         continue;
       }
 
       const contextShort = picked.suggested_context
         || `A ${picked.source === 'unsplash' ? 'real photo' : 'generated image'} from the ${picked.category || 'unknown'} category.`;
 
-      // Assign answer based on source
       const isReal = picked.source === 'unsplash' || picked.source === 'real' || picked.answer === 'real';
       const answer = isReal ? 'real' : 'ai';
       const sourceCredit = isReal ? `Unsplash / ${picked.photographer_name || 'Unknown'}` : (picked.photographer_name || 'AI Generated');
+
+      // Check if fallback was used and log it
+      const actualSource = isReal ? 'real' : 'ai';
+      if (actualSource !== preferredSource) {
+        details.push(`[fallback-used] Slot ${slot} on ${gap.date} used fallback source '${actualSource}' instead of preferred '${preferredSource}' due to pool deficit.`);
+      }
 
       const rawRow: Record<string, unknown> = {
         set_date: gap.date,
@@ -598,16 +695,10 @@ async function scheduleCandidates(
 
     if (daySlotsFilled > 0) {
       daysFilled++;
-      const filledSlotNums = rowsToInsert
-        .filter(r => r.set_date === gap.date)
-        .map(r => r.set_order as number);
-      // Get unique slots just in case
-      const uniqueSlots = Array.from(new Set(filledSlotNums)).sort();
-      details.push(`${gap.date}: scheduled ${daySlotsFilled} challenges (slots: ${uniqueSlots.join(', ')})`);
     }
   }
 
-  // Bulk insert — simple insert since there is no unique constraint on (set_date, set_order) in remote DB
+  // Bulk insert
   if (rowsToInsert.length > 0) {
     const { error } = await supabase
       .from('challenges')
@@ -618,6 +709,47 @@ async function scheduleCandidates(
     }
 
     scheduledCount = rowsToInsert.length;
+  }
+
+  // Post-fill telemetry validation to count and log exact real/AI mix and fallbacks
+  try {
+    const { data: allDayChallenges, error: queryError } = await supabase
+      .from('challenges')
+      .select('set_date, set_order, answer')
+      .in('set_date', gaps.map(g => g.date))
+      .order('set_date')
+      .order('set_order');
+
+    if (!queryError && allDayChallenges) {
+      for (const gap of gaps) {
+        const dayChallenges = allDayChallenges.filter(c => c.set_date === gap.date);
+        const standardChallenges = dayChallenges.filter(c => c.set_order <= 5);
+        const reflectionChallenges = dayChallenges.filter(c => c.set_order >= 6 && c.set_order <= 11);
+
+        const realStandard = standardChallenges.filter(c => c.answer === 'real').length;
+        const aiStandard = standardChallenges.filter(c => c.answer === 'ai').length;
+        const realReflection = reflectionChallenges.filter(c => c.answer === 'real').length;
+        const aiReflection = reflectionChallenges.filter(c => c.answer === 'ai').length;
+
+        const totalStandard = standardChallenges.length;
+        const totalReflection = reflectionChallenges.length;
+        const standardMixMet = (realStandard === 3 && aiStandard === 2);
+
+        let mixStatus = 'MIX MET';
+        let fallbackReason = '';
+        if (totalStandard === 5 && !standardMixMet) {
+          mixStatus = 'MIX DEVIATION';
+          fallbackReason = `Preferred standard mix (3 Real + 2 AI) could not be met due to candidate pool constraints. Serving ${realStandard} Real + ${aiStandard} AI to prioritize game availability.`;
+        } else if (totalStandard < 5) {
+          mixStatus = 'DEFICIT';
+          fallbackReason = `Incomplete standard set (${totalStandard}/5 slots). Usable candidate pool depleted.`;
+        }
+
+        details.push(`[daily-set-telemetry] ${gap.date}: Standard Set = ${totalStandard}/5 [Real: ${realStandard}, AI: ${aiStandard}] (${mixStatus}). Reflection Slots = ${totalReflection}/6 [Real: ${realReflection}, AI: ${aiReflection}]. ${fallbackReason ? `Reason: ${fallbackReason}` : ''}`);
+      }
+    }
+  } catch (telemetryErr) {
+    console.error('Failed to generate scheduling post-fill telemetry:', telemetryErr);
   }
 
   return { scheduledCount, daysFilled, details };

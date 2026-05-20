@@ -1,7 +1,7 @@
+import { createClient } from '@supabase/supabase-js';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Parse .env.local manually
 const envPath = path.join(process.cwd(), '.env.local');
 const envContent = fs.readFileSync(envPath, 'utf8');
 const env = {};
@@ -20,27 +20,22 @@ envContent.split('\n').forEach(line => {
 
 const url = env.NEXT_PUBLIC_SUPABASE_URL;
 const key = env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!url || !key) {
-  console.error("Missing Supabase credentials in .env.local");
-  process.exit(1);
-}
-
 const supabase = createClient(url, key);
 
-async function query() {
+async function testSystemCatalog() {
+  console.log("Testing if we can read system catalogs or run custom queries via Supabase client...");
+  
+  // Try querying a non-public schema or system view
   const { data, error } = await supabase
-    .from('challenges')
-    .select('*');
+    .from('pg_proc')
+    .select('proname')
+    .limit(5);
 
   if (error) {
-    console.error("Error querying challenges:", error);
+    console.log("❌ Failed to query pg_proc directly:", error.message);
   } else {
-    console.log(`Found ${data.length} challenges:`);
-    data.forEach(c => {
-      console.log(`ID: ${c.id}, Date: ${c.set_date}, Order: ${c.set_order}, Answer: ${c.answer}, URL: ${c.image_url}`);
-    });
+    console.log("✅ Success! Queried pg_proc:", data);
   }
 }
 
-query().catch(console.error);
+testSystemCatalog().catch(console.error);

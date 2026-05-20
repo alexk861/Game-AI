@@ -30,10 +30,14 @@ export async function GET(request: NextRequest) {
     let totalAdded = 0;
     const errors: string[] = [];
 
-    // 2. Iterate through categories and fetch 5 candidates each
+    const realFetchPerCategory = process.env.REAL_FETCH_PER_CATEGORY
+      ? parseInt(process.env.REAL_FETCH_PER_CATEGORY, 10)
+      : 4;
+
+    // 2. Iterate through categories and fetch candidates each
     for (const category of CATEGORIES) {
       try {
-        const photos = await fetchUnsplashCandidates(category, 5);
+        const photos = await fetchUnsplashCandidates(category, realFetchPerCategory);
         
         for (const photo of photos) {
           // Score the candidate

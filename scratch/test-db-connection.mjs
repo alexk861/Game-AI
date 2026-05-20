@@ -28,19 +28,13 @@ if (!url || !key) {
 
 const supabase = createClient(url, key);
 
-async function query() {
-  const { data, error } = await supabase
-    .from('challenges')
-    .select('*');
-
+async function check() {
+  const { data, error } = await supabase.from('challenges').select('id').limit(1);
   if (error) {
-    console.error("Error querying challenges:", error);
+    console.error("DB connection error:", error);
   } else {
-    console.log(`Found ${data.length} challenges:`);
-    data.forEach(c => {
-      console.log(`ID: ${c.id}, Date: ${c.set_date}, Order: ${c.set_order}, Answer: ${c.answer}, URL: ${c.image_url}`);
-    });
+    console.log("DB connection successful! Found:", data);
   }
 }
 
-query().catch(console.error);
+check().catch(console.error);

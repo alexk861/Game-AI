@@ -23,17 +23,22 @@ const key = env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(url, key);
 
 async function check() {
-  const { data, error } = await supabase
+  console.log(`Fetching all challenges...`);
+  const { data: challenges, error } = await supabase
     .from('challenges')
-    .select('id, set_date, set_order, difficulty, answer')
+    .select('*')
     .order('set_date', { ascending: true })
     .order('set_order', { ascending: true });
 
   if (error) {
     console.error("Error:", error);
-  } else {
-    console.log("All challenges in DB:");
-    console.log(data);
+    return;
   }
+
+  console.log(`Found ${challenges.length} challenges total.`);
+  challenges.forEach(c => {
+    console.log(`${c.set_date} Slot ${c.set_order}: Answer=${c.answer}, Difficulty=${c.difficulty}, Credit=${c.source_credit}, Image=${c.image_url.substring(0, 60)}...`);
+  });
 }
+
 check().catch(console.error);

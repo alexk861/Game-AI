@@ -100,14 +100,25 @@ async function generateFreeImage(prompt: string): Promise<string> {
   return Buffer.from(arrayBuffer).toString('base64');
 }
 
+export interface GeneratedPromptFingerprint {
+  prompt: string;
+  composition: 'centered' | 'wide-angle' | 'close-up' | 'macro' | 'asymmetric' | 'flat-lay';
+  emotion: 'calm' | 'lonely' | 'tense' | 'cold' | 'ordinary' | 'mysterious';
+  lighting: 'overcast' | 'fluorescent' | 'ambient' | 'morning-sun' | 'flash' | 'harsh-shadows';
+  perspective: 'eye-level' | 'high-angle' | 'low-angle' | 'dutch-angle' | 'first-person';
+  scene: 'interior' | 'street' | 'nature' | 'domestic' | 'suburban' | 'urban';
+  object: string;
+  texture: 'grainy' | 'smooth' | 'dusty' | 'flat' | 'glossy';
+}
+
 /**
  * Generates image prompts using Gemini text models based on real image metadata.
- * Safety requirements are strictly enforced.
+ * Safety and composition rules are strictly enforced.
  */
-export async function generatePromptsForImages(count: number, recentMetadata: Record<string, unknown>[]): Promise<string[]> {
+export async function generatePromptsForImages(count: number, recentMetadata: Record<string, unknown>[]): Promise<GeneratedPromptFingerprint[]> {
   const textPrompt = `
     You are an AI prompt engineer generating prompts for an image generation model.
-    Generate ${count} distinct prompts to create AI images. 
+    Generate ${count} distinct prompt objects to create AI images.
     
     Here is some metadata from recent real images we have in our database. Use these to get inspiration for topics and categories:
     ${JSON.stringify(recentMetadata, null, 2)}
@@ -129,7 +140,18 @@ export async function generatePromptsForImages(count: number, recentMetadata: Re
     - Instead, aim for mundane, amateur smartphone-photo aesthetics. Lighting should be natural or ambient indoor, slightly imperfect. Focus on everyday objects, mundane scenes, simple landscapes, or ordinary situations.
     
     Make the prompts highly descriptive and focus on everyday objects, animals, landscapes, or safe abstract concepts.
-    Output EXACTLY ${count} prompts as a JSON array of strings. Do not include any markdown formatting or extra text.
+    
+    Output EXACTLY ${count} prompt objects as a JSON array. Each object MUST have these properties:
+    - prompt: The descriptive prompt string (mundane, amateur phone style)
+    - composition: "centered" | "wide-angle" | "close-up" | "macro" | "asymmetric" | "flat-lay"
+    - emotion: "calm" | "lonely" | "tense" | "cold" | "ordinary" | "mysterious"
+    - lighting: "overcast" | "fluorescent" | "ambient" | "morning-sun" | "flash" | "harsh-shadows"
+    - perspective: "eye-level" | "high-angle" | "low-angle" | "dutch-angle" | "first-person"
+    - scene: "interior" | "street" | "nature" | "domestic" | "suburban" | "urban"
+    - object: The main subject category (e.g. "chair", "wire", "kitchen", "landscape", "dog")
+    - texture: "grainy" | "smooth" | "dusty" | "flat" | "glossy"
+    
+    Do not include any markdown formatting or extra text outside of the JSON block.
   `;
 
   // We use gemini-2.5-flash for text/prompt generation as it's fast and reliable
@@ -155,3 +177,4 @@ export async function generatePromptsForImages(count: number, recentMetadata: Re
     throw new Error(`Failed to parse prompt JSON from Gemini: ${(err as Error).message}`);
   }
 }
+
