@@ -1,25 +1,64 @@
 import { NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase';
+import { FALLBACK_CHALLENGES } from '@/lib/fallbackChallenges';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const mode = searchParams.get('mode');
+
+  const isReflection1 = mode === 'reflection' || mode === 'reflection-1';
+  const isReflection2 = mode === 'reflection-2';
+  const isReflection3 = mode === 'reflection-3';
+  const isReflection = isReflection1 || isReflection2 || isReflection3;
+
+  let expectedOrders: number[] = [1, 2, 3, 4, 5];
+  let expectedCount = 5;
+  let levelIndex = 0;
+
+  if (isReflection1) {
+    expectedOrders = [6, 7, 8];
+    expectedCount = 3;
+    levelIndex = 1;
+  } else if (isReflection2) {
+    expectedOrders = [9, 10];
+    expectedCount = 2;
+    levelIndex = 2;
+  } else if (isReflection3) {
+    expectedOrders = [11];
+    expectedCount = 1;
+    levelIndex = 3;
+  }
+
   const today = new Date().toISOString().split('T')[0];
   const supabase = getSupabase();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('challenges')
     .select('id, image_url, difficulty, set_order, answer')
-    .eq('set_date', today)
-    .lte('set_order', 5)
-    .order('set_order', { ascending: true });
+    .eq('set_date', today);
+
+  if (isReflection) {
+    query = query.in('set_order', expectedOrders);
+  } else {
+    query = query.lte('set_order', 5);
+  }
+
+  const { data: dbData, error } = await query.order('set_order', { ascending: true });
 
   if (error) {
-    console.error('Daily set fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch daily set' },
-      { status: 500 }
-    );
+    console.error('Daily set fetch error from database:', error);
+  }
+
+  // Graceful fallback to pre-defined static challenges if DB has insufficient rows or errors
+  let data = dbData || [];
+  let usingFallback = false;
+
+  if (isReflection && (!data || data.length < expectedCount)) {
+    console.warn(`[daily-set] Warning: Database returned ${data?.length ?? 0} challenges for mode ${mode}. Falling back to pre-defined challenges.`);
+    data = FALLBACK_CHALLENGES[levelIndex] || [];
+    usingFallback = true;
   }
 
   if (!data || data.length === 0) {
@@ -33,18 +72,17 @@ export async function GET() {
   const validationErrors: string[] = [];
   const softWarnings: string[] = [];
 
-  // Hard Check 1: Exactly 5 public cards exist
-  if (data.length !== 5) {
-    validationErrors.push(`Expected exactly 5 challenges, but found ${data.length}`);
+  // Hard Check 1: Count check
+  if (data.length !== expectedCount) {
+    validationErrors.push(`Expected exactly ${expectedCount} challenges, but found ${data.length}`);
   }
 
-  // Hard Check 2: set_order 1-5 all present without gaps
+  // Hard Check 2: set_order values checking without gaps
   const sortedByOrder = [...data].sort((a, b) => a.set_order - b.set_order);
   const orders = sortedByOrder.map(c => c.set_order);
-  const expectedOrders = [1, 2, 3, 4, 5];
   const hasAllOrders = expectedOrders.every((val, index) => orders[index] === val);
   if (!hasAllOrders) {
-    validationErrors.push(`Expected set_order values to be exactly 1, 2, 3, 4, 5, but got [${orders.join(', ')}]`);
+    validationErrors.push(`Expected set_order values to be exactly [${expectedOrders.join(', ')}], but got [${orders.join(', ')}]`);
   }
 
   // Hard Check 3: No duplicate challenge IDs
@@ -67,8 +105,8 @@ export async function GET() {
     validationErrors.push(`One or more challenges are missing their image_url value.`);
   }
 
-  // Hard Check 6: No deleted/rejected candidates
-  if (imageUrls.length > 0) {
+  // Hard Check 6: No deleted/rejected candidates (only when database queries succeed and we're not using fallback)
+  if (!usingFallback && imageUrls.length > 0) {
     const { data: candidates, error: candError } = await supabase
       .from('content_candidates')
       .select('image_url, status')
@@ -84,10 +122,10 @@ export async function GET() {
     }
   }
 
-  // Soft Check 1: At least 2 real and 2 AI
+  // Soft Check 1: At least 2 real and 2 AI (only for primary set)
   const realCount = data.filter(c => c.answer === 'real').length;
   const aiCount = data.filter(c => c.answer === 'ai').length;
-  if (realCount < 2 || aiCount < 2) {
+  if (!isReflection && (realCount < 2 || aiCount < 2)) {
     softWarnings.push(`Expected at least 2 real and 2 AI challenges, but found: ${realCount} real, ${aiCount} AI`);
   }
 
@@ -134,6 +172,7 @@ export async function GET() {
   // ── Sanitization ──
   // Strip out answer before sending to the client to prevent cheating
   const sanitizedChallenges = data.map(c => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { answer, ...rest } = c;
     return rest;
   });
@@ -144,7 +183,10 @@ export async function GET() {
   sanitizedChallenges.sort((a, b) => a.difficulty - b.difficulty);
 
   return NextResponse.json(
-    { date: today, challenges: sanitizedChallenges },
+    { 
+      date: today, 
+      challenges: sanitizedChallenges
+    },
     {
       headers: {
         'Cache-Control': 's-maxage=3600, stale-while-revalidate',

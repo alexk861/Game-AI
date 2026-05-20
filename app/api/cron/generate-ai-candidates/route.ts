@@ -4,6 +4,7 @@ import { isCronAuthorized } from '@/lib/adminAuth';
 import { generateAiCandidates } from '@/lib/aiCandidateGenerator';
 
 export const maxDuration = 300; // Vercel maximum execution time in seconds (5 minutes)
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {

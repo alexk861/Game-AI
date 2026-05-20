@@ -46,4 +46,28 @@ export const analytics = {
 
   investigateUsed: (challengeId: string, difficulty: number) =>
     track('investigate_used', { challenge_id: challengeId, difficulty }),
+
+  reflectionRequest: (level: number) =>
+    track('reflection_request', { level }),
+
+  reflectionAdStarted: (level: number) =>
+    track('reflection_ad_started', { level }),
+
+  reflectionAdCompleted: (level: number) =>
+    track('reflection_ad_completed', { level }),
+
+  reflectionAdDismissed: (level: number) =>
+    track('reflection_ad_dismissed', { level }),
+
+  reflectionLevelStarted: (level: number) =>
+    track('reflection_level_started', { level }),
+
+  reflectionLevelCompleted: (level: number) =>
+    track('reflection_level_completed', { level }),
+
+  reflectionDropout: (level: number) =>
+    track('reflection_dropout', { level }),
+
+  anomalyCompletion: () =>
+    track('anomaly_completion'),
 };

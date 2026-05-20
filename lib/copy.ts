@@ -10,7 +10,7 @@ export const copy = {
   },
 
   gameplay: {
-    commitPending: 'checking answer',
+    commitPending: 'verifying',
     investigatePrompt: 'hold to look closer',
     decisionKicker: 'choose',
     real: 'Real',
@@ -30,12 +30,12 @@ export const copy = {
 
   investigation: {
     fragments: [
-      'EXIF: missing local timestamp',
-      'compression seams detected',
-      'reverse-search: REDACTED',
-      'lighting anomaly in upper quadrant',
-      'Most people missed this.',
-      'look closer',
+      'Something feels slightly wrong.',
+      'A subtle light anomaly.',
+      'Look closer at the texture.',
+      'Did a camera capture this?',
+      'Observers hesitated here.',
+      'An unnatural sharpness.',
     ],
   },
 
@@ -55,10 +55,10 @@ export const copy = {
     majorityAi: 'Most users thought this was AI.',
     majorityReal: 'Most users thought this was real.',
     split: 'Human observers disagreed.',
-    realOrigin: 'Real image. The source checked out.',
-    aiOrigin: 'AI image. The clues were misleading.',
-    unknownOrigin: 'Source details unavailable.',
-    networkFallback: 'Could not verify the source.',
+    realOrigin: 'Organic capture. Verifiable details.',
+    aiOrigin: 'Synthetic representation. Generated details.',
+    unknownOrigin: 'Origin unverified.',
+    networkFallback: 'Source unverified.',
   },
 
   speed: {

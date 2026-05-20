@@ -53,6 +53,15 @@ export interface UncannyStorage {
   bestStreak: number;
   totalSetsPlayed: number;
   totalCorrect: number;
+  todayAdUnlocked?: boolean;
+  rewardedReflectionUsedToday?: boolean;
+  rewardedReflectionUnlockedAt?: string | null;
+  rewardedReflectionCompleted?: boolean;
+  rewardedReflectionResults?: GuessResult[];
+  rewardedReflectionCompletionMs?: number | null;
+  reflectionLevel?: number;
+  reflectionUnlockCountToday?: number;
+  lastReflectionUnlockAt?: string | null;
 }
 
 export type GamePhase =

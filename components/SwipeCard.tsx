@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { analytics } from '@/lib/analytics';
 import InvestigationOverlay from '@/components/InvestigationOverlay';
 import { copy } from '@/lib/copy';
+import NextImage from 'next/image';
 
 interface SwipeCardProps {
   challengeId?: string;
@@ -129,7 +130,7 @@ export default function SwipeCard({
   const realIntent = dragState.isDragging ? Math.min(Math.max(clampedDelta / THRESHOLD, 0), 1) : 0;
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-surface artifact-frame">
+    <div className="relative h-full w-full overflow-hidden bg-surface">
       <div
         className={`swipe-card absolute inset-0 overflow-hidden ${
           exitDirection === 'left' ? 'swipe-card-exit-left' :
@@ -146,12 +147,15 @@ export default function SwipeCard({
         onPointerLeave={handlePointerCancel}
         onContextMenu={(event) => event.preventDefault()}
       >
-        <img
+        <NextImage
           src={imageUrl}
           alt="Unresolved visual record"
-          className={`absolute inset-0 h-full w-full select-none object-cover transition-all duration-500 ease-out micro-flicker ${isInvestigating ? '' : 'image-breathe chromatic-drift'}`}
+          className={`absolute inset-0 h-full w-full select-none object-cover transition-all duration-500 ease-out ${isInvestigating ? '' : 'image-breathe'}`}
           draggable={false}
           onError={() => setImageErrored(true)}
+          fill
+          priority
+          sizes="(max-width: 768px) 100vw, 50vw"
           style={{
             filter: isInvestigating
               ? 'contrast(122%) brightness(78%) saturate(64%) blur(0.15px)'
@@ -163,25 +167,21 @@ export default function SwipeCard({
         {imageErrored && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface px-8 text-center">
             <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted/50">
+              <div className="font-sans text-[10px] font-light uppercase tracking-[0.18em] text-muted/50">
                 {copy.errors.imageUnavailable}
               </div>
-              <div className="mt-3 text-sm leading-relaxed text-muted/70">
+              <div className="mt-3 text-sm font-sans font-light leading-relaxed text-muted/70">
                 {copy.errors.imageUnavailableNote}
               </div>
             </div>
           </div>
         )}
 
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_48%_42%,transparent_32%,rgba(19,19,19,0.38)_72%,rgba(19,19,19,0.66)_100%)]" />
-        <div className="analog-drift absolute inset-0 pointer-events-none" />
         <div
           className="absolute inset-0 z-10 pointer-events-none"
-          style={{ background: `linear-gradient(to right, rgba(152,142,144,${realIntent * 0.2}), transparent 44%, rgba(160,64,64,${aiIntent * 0.24}))` }}
+          style={{ background: `linear-gradient(to right, rgba(159,166,178,${realIntent * 0.02}), transparent 50%, rgba(184,84,76,${aiIntent * 0.03}))` }}
         />
-        <div className="absolute bottom-0 left-0 right-0 z-10 h-44 bg-gradient-to-t from-background/82 via-background/24 to-transparent" />
         <InvestigationOverlay visible={isInvestigating} />
-        <div className="noise-overlay" style={{ opacity: isInvestigating ? 0.18 : 0.1 }} />
       </div>
     </div>
   );

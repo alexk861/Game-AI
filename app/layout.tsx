@@ -24,6 +24,9 @@ export const metadata: Metadata = {
   icons: {
     icon: '/favicon.ico',
   },
+  other: {
+    'google-adsense-account': 'ca-pub-3572878125126394',
+  },
 };
 
 export const viewport: Viewport = {
@@ -51,6 +54,13 @@ export default function RootLayout({
       </head>
       <body className="bg-background text-foreground font-body antialiased">
         {children}
+
+        <Script
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3572878125126394"
+          strategy="afterInteractive"
+          crossOrigin="anonymous"
+          async
+        />
 
         {GA_ID && (
           <>

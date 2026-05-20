@@ -19,6 +19,14 @@ const defaultState: UncannyStorage = {
   bestStreak: 0,
   totalSetsPlayed: 0,
   totalCorrect: 0,
+  rewardedReflectionUsedToday: false,
+  rewardedReflectionUnlockedAt: null,
+  rewardedReflectionCompleted: false,
+  rewardedReflectionResults: [],
+  rewardedReflectionCompletionMs: null,
+  reflectionLevel: 0,
+  reflectionUnlockCountToday: 0,
+  lastReflectionUnlockAt: null,
 };
 
 export function getStorage(): UncannyStorage {
@@ -38,7 +46,11 @@ export function getStorage(): UncannyStorage {
 
 export function saveStorage(state: UncannyStorage): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (err) {
+    console.warn('[storage] Failed to save state to localStorage:', err);
+  }
 }
 
 export function initTodaySession(): UncannyStorage {
@@ -70,6 +82,15 @@ export function initTodaySession(): UncannyStorage {
     todayCompletedAt: null,
     todayCompletionMs: null,
     currentStreak: newStreak,
+    todayAdUnlocked: false,
+    rewardedReflectionUsedToday: false,
+    rewardedReflectionUnlockedAt: null,
+    rewardedReflectionCompleted: false,
+    rewardedReflectionResults: [],
+    rewardedReflectionCompletionMs: null,
+    reflectionLevel: 0,
+    reflectionUnlockCountToday: 0,
+    lastReflectionUnlockAt: null,
   };
 
   saveStorage(newState);
@@ -172,4 +193,58 @@ export function getResumeIndex(): number {
   const today = getToday();
   if (state.todayDate !== today) return 0;
   return state.todayResults.length;
+}
+
+export function resetTodaySessionForAdExtraPlay(): UncannyStorage {
+  const state = getStorage();
+  const newState: UncannyStorage = {
+    ...state,
+    todayStarted: false,
+    todayStartedAt: null,
+    todayResults: [],
+    todayCompleted: false,
+    todayCompletedAt: null,
+    todayCompletionMs: null,
+    todayAdUnlocked: true,
+  };
+  saveStorage(newState);
+  return newState;
+}
+
+export function unlockRewardedReflection(): UncannyStorage {
+  const state = getStorage();
+  const currentLevel = state.reflectionLevel ?? 0;
+  const currentCount = state.reflectionUnlockCountToday ?? 0;
+  const newState: UncannyStorage = {
+    ...state,
+    rewardedReflectionUsedToday: true,
+    reflectionLevel: currentLevel + 1,
+    reflectionUnlockCountToday: currentCount + 1,
+    rewardedReflectionUnlockedAt: new Date().toISOString(),
+    rewardedReflectionCompleted: false,
+    rewardedReflectionResults: [],
+    rewardedReflectionCompletionMs: null,
+  };
+  saveStorage(newState);
+  return newState;
+}
+
+export function addReflectionResult(result: GuessResult): UncannyStorage {
+  const state = getStorage();
+  const results = state.rewardedReflectionResults || [];
+  state.rewardedReflectionResults = [...results, result];
+  if (result.correct) {
+    state.totalCorrect += 1;
+  }
+  saveStorage(state);
+  return state;
+}
+
+export function completeReflection(completionMs: number): UncannyStorage {
+  const state = getStorage();
+  state.rewardedReflectionCompleted = true;
+  state.rewardedReflectionCompletionMs = completionMs;
+  state.lastReflectionUnlockAt = new Date().toISOString();
+  saveStorage(state);
+  return state;
 }

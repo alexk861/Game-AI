@@ -1,70 +1,147 @@
 'use client';
 
+import { useState, useEffect, useCallback } from 'react';
 import TopNav from './TopNav';
 import BottomNav from './BottomNav';
 import Link from 'next/link';
+import { useRewardedAd } from '@/hooks/useRewardedAd';
 
-export default function ArchiveExhausted() {
+interface ArchiveExhaustedProps {
+  onUnlockExtraPlay?: () => void;
+  onRequestReflection?: () => void;
+  adAlreadyUnlocked?: boolean;
+  reflectionLevel?: number;
+  lastReflectionUnlockAt?: string | null;
+}
+
+export default function ArchiveExhausted({
+  onUnlockExtraPlay,
+  onRequestReflection,
+  adAlreadyUnlocked = false,
+  reflectionLevel = 0,
+  lastReflectionUnlockAt = null,
+}: ArchiveExhaustedProps) {
+  const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
+  const [adWatched, setAdWatched] = useState(false);
+  const [adLoading, setAdLoading] = useState(false);
+
+  const handleExtraPlayReward = useCallback(() => {
+    setAdWatched(true);
+    setAdLoading(false);
+    if (onUnlockExtraPlay) onUnlockExtraPlay();
+  }, [onUnlockExtraPlay]);
+
+  const handleExtraPlayAdClosed = useCallback(() => {
+    setAdLoading(false);
+  }, []);
+
+  const { triggerAd: triggerExtraPlayAd } = useRewardedAd(handleExtraPlayReward, handleExtraPlayAdClosed);
+
+  const handleWatchAndReplay = useCallback(() => {
+    setAdLoading(true);
+    triggerExtraPlayAd();
+  }, [triggerExtraPlayAd]);
+
+  useEffect(() => {
+    if (!lastReflectionUnlockAt) {
+      setCooldownRemaining(0);
+      return;
+    }
+    const checkCooldown = () => {
+      const elapsed = Date.now() - new Date(lastReflectionUnlockAt).getTime();
+      const remaining = Math.max(0, Math.ceil((20000 - elapsed) / 1000));
+      setCooldownRemaining(remaining);
+      return remaining;
+    };
+
+    const remaining = checkCooldown();
+    if (remaining <= 0) return;
+
+    const interval = setInterval(() => {
+      const rem = checkCooldown();
+      if (rem <= 0) {
+        clearInterval(interval);
+      }
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [lastReflectionUnlockAt]);
+
   return (
-    <main className="h-[100dvh] overflow-y-auto bg-background text-on-surface cinematic-bg selection:bg-on-surface selection:text-background flex flex-col">
-      <div className="grain-overlay" />
+    <main className="h-[100dvh] overflow-y-auto bg-background text-on-surface selection:bg-on-surface selection:text-background flex flex-col">
       <TopNav />
       
-      <div className="relative min-h-[100dvh] flex flex-col items-center justify-center px-6 md:px-16 pt-24 pb-48">
-        {/* Background Atmospheric Layer */}
-        <div className="fixed inset-0 pointer-events-none z-0">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-surface-container-low to-background opacity-40"></div>
-          <div className="absolute inset-0 scanline-overlay"></div>
-        </div>
-
+      <div className="relative min-h-[100dvh] flex flex-col items-center justify-center px-6 md:px-16 pt-28 pb-36">
         {/* Central Empty State Module */}
-        <section className="relative z-10 w-full max-w-4xl flex flex-col items-center text-center">
-          {/* Metadata Header */}
-          <div className="w-full flex justify-between items-end mb-8 border-b border-outline-variant pb-2 opacity-60">
-            <span className="font-mono text-[10px] md:text-[12px] uppercase tracking-[0.2em] text-outline">DAILY ARCHIVE UPDATE</span>
-            <span className="font-mono text-[10px] md:text-[12px] uppercase tracking-[0.2em] text-outline">COMPLETED</span>
+        <section className="relative z-10 w-full max-w-2xl flex flex-col items-center text-center">
+          <div className="font-sans text-[9px] font-light uppercase tracking-[0.2em] text-muted/40 mb-10">
+            Daily Archive
           </div>
+          
+          <h1 className="font-sans text-2xl md:text-3xl font-light tracking-wide text-foreground mb-6">
+            All images reviewed.
+          </h1>
+          
+          <p className="text-sm text-muted/50 max-w-sm mb-16 leading-relaxed font-sans font-light">
+            Today&apos;s photographic set is complete. The archive will refresh tomorrow.
+          </p>
 
-          {/* Large Empty Frame with Noise */}
-          <div className="relative w-full aspect-[16/7] md:aspect-[21/9] border border-outline-variant mb-16 group overflow-hidden flex items-center justify-center">
-            {/* Internal Corner Marks */}
-            <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-outline opacity-40"></div>
-            <div className="absolute top-4 right-4 w-4 h-4 border-t border-r border-outline opacity-40"></div>
-            <div className="absolute bottom-4 left-4 w-4 h-4 border-b border-l border-outline opacity-40"></div>
-            <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-outline opacity-40"></div>
-
-            {/* Noise Texture Center */}
-            <div className="w-32 h-32 md:w-48 md:h-48 border border-outline-variant flex items-center justify-center bg-surface-container-lowest relative overflow-hidden">
-              <div className="absolute inset-0 opacity-20 mix-blend-screen overflow-hidden">
-                <img 
-                  className="w-full h-full object-cover grayscale contrast-200" 
-                  alt="Static noise texture" 
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKLGV9fJ2Vz1n0CuCDT70b-265Cv5Yr5lzsehFInmhn0u37lI2lmxQSyjhFEspBBNsTB37EdziSnUac9_S38YEcJzKF3OSITbPj71HLtRoCsuwuTvW8dP-kAS8yfwvgvjeD6HKZxMkcmRLLTcqJDSg0vmEg2NI8wBn7SFoQczJTkpPbtA_qh7Na7I0dbwGkZ-NX6cPcliD4jIU46yRmW9A4hW8MtvSRETme0Un7X_dIWSQ2VqIw7cLdJuR1RH6Hn7Ac1k-KfveL-r_"
-                />
+          {/* Action buttons */}
+          <div className="flex flex-col items-center w-full max-w-xs sm:max-w-md">
+            {!adAlreadyUnlocked && onRequestReflection && reflectionLevel < 3 && (
+              <div className="w-full flex flex-col items-center mb-6">
+                <button
+                  type="button"
+                  disabled={cooldownRemaining > 0}
+                  onClick={onRequestReflection}
+                  className={`w-full border py-3.5 px-8 font-sans text-[10px] font-light uppercase tracking-[0.15em] transition-all text-center rounded-[2px] ${
+                    cooldownRemaining > 0
+                      ? 'border-outline/10 text-muted/35 cursor-not-allowed bg-transparent'
+                      : 'border-accent-amber/25 hover:border-accent-amber/50 text-accent-amber hover:bg-white/2 cursor-pointer'
+                  }`}
+                >
+                  {cooldownRemaining > 0 ? 'Allow the archive to stabilize.' : reflectionLevel === 1 ? 'Continue Observation' : reflectionLevel === 2 ? 'One final unstable record remains.' : 'Request Reflection'}
+                </button>
+                <p className="text-[9px] font-sans font-light tracking-wide text-muted/30 mt-3 text-center">
+                  {cooldownRemaining > 0
+                    ? `Neural pathways stabilizing... (${cooldownRemaining}s remaining)`
+                    : reflectionLevel === 1
+                      ? 'Two unstable records remain.'
+                      : reflectionLevel === 2
+                        ? 'This archive was not intended for prolonged observation.'
+                        : 'Observe another sequence. A sponsor-supported reflection will play.'}
+                </p>
               </div>
-              <span className="material-symbols-outlined text-outline text-4xl opacity-30" style={{ fontVariationSettings: "'wght' 100" }}>visibility_off</span>
-            </div>
+            )}
 
-            {/* Subtle Tension Monospaced Text */}
-            <div className="absolute bottom-8 w-full flex justify-center">
-              <p className="font-mono text-xs uppercase text-outline tracking-[0.3em] opacity-40 animate-pulse">Waiting for new data.</p>
-            </div>
-          </div>
-
-          {/* Content Details */}
-          <div className="max-w-xl mx-auto">
-            <h2 className="font-sans text-3xl md:text-5xl uppercase tracking-tighter text-on-surface mb-6 font-bold">ALL IMAGES REVIEWED</h2>
-            <p className="text-base text-outline-variant mb-12 leading-relaxed">
-              Today&apos;s set is complete. The archive will refresh tomorrow.
-            </p>
-
-            {/* Action */}
-            <div className="flex flex-col md:flex-row gap-4 justify-center">
-              <Link href="/profile" className="border border-outline px-12 py-4 font-mono text-xs uppercase tracking-[0.2em] hover:bg-on-surface hover:text-background transition-all duration-0 active:scale-95 inline-block">
-                VIEW RECORD
+            {onUnlockExtraPlay && !adWatched && (
+              <div className="w-full flex flex-col items-center mb-6">
+                <button
+                  type="button"
+                  disabled={adLoading}
+                  onClick={handleWatchAndReplay}
+                  className="w-full border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-400 hover:bg-emerald-500/5 transition-all py-3.5 px-8 text-center font-sans text-[10px] font-light uppercase tracking-[0.15em] rounded-[2px] active:scale-[0.985] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {adLoading ? 'Loading ad…' : '▶ Watch & Play Again'}
+                </button>
+                <p className="text-[9px] font-sans font-light tracking-wide text-muted/30 mt-3 text-center">
+                  Watch a short sponsor message to replay today&apos;s archive.
+                </p>
+              </div>
+            )}
+            
+            <div className="flex flex-col sm:flex-row gap-4 w-full justify-center mt-4">
+              <Link 
+                href="/profile" 
+                className="flex-1 border border-outline/10 py-3.5 px-8 font-sans text-[10px] font-light uppercase tracking-[0.15em] text-muted hover:text-foreground hover:bg-white/2 transition-all text-center rounded-[2px]"
+              >
+                Perception Record
               </Link>
-              <Link href="/leaderboard" className="border border-outline-variant px-12 py-4 font-mono text-xs uppercase tracking-[0.2em] text-outline hover:text-on-surface transition-all duration-0 active:scale-95 inline-block">
-                VIEW TODAY&apos;S RESULTS
+              <Link 
+                href="/leaderboard" 
+                className="flex-1 border border-outline/10 py-3.5 px-8 font-sans text-[10px] font-light uppercase tracking-[0.15em] text-muted hover:text-foreground hover:bg-white/2 transition-all text-center rounded-[2px]"
+              >
+                Observer Registry
               </Link>
             </div>
           </div>

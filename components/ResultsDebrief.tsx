@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Challenge, GuessResult } from '@/lib/types';
 import { analytics } from '@/lib/analytics';
 import { copy, resultReflection, speedObservation, reasoningInsight } from '@/lib/copy';
 import { TIMER_DURATION_SECONDS } from '@/lib/gameConfig';
+import { useRewardedAd } from '@/hooks/useRewardedAd';
+import Image from 'next/image';
 
 interface ResultsDebriefProps {
   results: GuessResult[];
@@ -12,14 +14,99 @@ interface ResultsDebriefProps {
   streak: number;
   setDate: string;
   completionMs: number | null;
+  onUnlockExtraPlay?: () => void;
+  onRequestReflection?: () => void;
+  adAlreadyUnlocked?: boolean;
+  reflectionLevel?: number;
+  lastReflectionUnlockAt?: string | null;
 }
 
 function comparisonFor(score: number): number {
   return [18, 31, 49, 68, 82, 94][score] ?? 49;
 }
 
-export default function ResultsDebrief({ results, challenges, streak, setDate, completionMs }: ResultsDebriefProps) {
+function getSelectionNarrative(result: GuessResult): string {
+  const isAI = result.answer 
+    ? result.answer === 'ai'
+    : result.guess === 'real'
+      ? !result.correct
+      : result.correct;
+
+  const noted = result.reasoningTag ? ` You noted the ${result.reasoningTag.toLowerCase()}.` : '';
+
+  if (result.guess === 'timeout') {
+    return `You were held by uncertainty until time expired. The record was ${isAI ? 'synthetic' : 'organic'}.${noted}`;
+  }
+
+  if (result.correct) {
+    return isAI
+      ? `Your instinct immediately detected the synthetic representation.${noted}`
+      : `Your instinct immediately recognized the organic capture.${noted}`;
+  } else {
+    return isAI
+      ? `You trusted the synthetic representation as authentic.${noted}`
+      : `You doubted the organic capture, perceiving it as synthetic.${noted}`;
+  }
+}
+
+export default function ResultsDebrief({
+  results,
+  challenges,
+  streak,
+  setDate,
+  completionMs,
+  onUnlockExtraPlay,
+  onRequestReflection,
+  adAlreadyUnlocked = false,
+  reflectionLevel = 0,
+  lastReflectionUnlockAt = null,
+}: ResultsDebriefProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
+  const [adWatched, setAdWatched] = useState(false);
+  const [adLoading, setAdLoading] = useState(false);
+
+  const handleExtraPlayReward = useCallback(() => {
+    setAdWatched(true);
+    setAdLoading(false);
+    if (onUnlockExtraPlay) onUnlockExtraPlay();
+  }, [onUnlockExtraPlay]);
+
+  const handleExtraPlayAdClosed = useCallback(() => {
+    setAdLoading(false);
+  }, []);
+
+  const { triggerAd: triggerExtraPlayAd } = useRewardedAd(handleExtraPlayReward, handleExtraPlayAdClosed);
+
+  const handleWatchAndReplay = useCallback(() => {
+    setAdLoading(true);
+    triggerExtraPlayAd();
+  }, [triggerExtraPlayAd]);
+
+  useEffect(() => {
+    if (!lastReflectionUnlockAt) {
+      setCooldownRemaining(0);
+      return;
+    }
+    const checkCooldown = () => {
+      const elapsed = Date.now() - new Date(lastReflectionUnlockAt).getTime();
+      const remaining = Math.max(0, Math.ceil((20000 - elapsed) / 1000));
+      setCooldownRemaining(remaining);
+      return remaining;
+    };
+
+    const remaining = checkCooldown();
+    if (remaining <= 0) return;
+
+    const interval = setInterval(() => {
+      const rem = checkCooldown();
+      if (rem <= 0) {
+        clearInterval(interval);
+      }
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [lastReflectionUnlockAt]);
   const score = results.filter(result => result.correct).length;
   const perceptionPercent = Math.round((score / Math.max(results.length, 1)) * 100);
   const comparison = comparisonFor(score);
@@ -30,13 +117,11 @@ export default function ResultsDebrief({ results, challenges, streak, setDate, c
   const selectedResult = results[selectedIndex] || results[0];
   const selectedChallenge = challenges.find(challenge => challenge.id === selectedResult?.challengeId) || challenges[selectedIndex] || challenges[0];
   const selectedImageUrl = selectedResult?.imageUrl || selectedChallenge?.image_url;
-  const selectedAnswer = selectedResult?.answer;
-  const selectedGuess = selectedResult?.guess;
-  const shareMarks = results.map(result => result.guess === 'timeout' ? '0' : result.correct ? '1' : 'x').join('');
   const completionSeconds = completionMs === null ? null : Math.max(0, Math.round(completionMs / 1000));
   const completionLabel = completionSeconds === null
     ? 'not recorded'
     : `${Math.floor(completionSeconds / 60)}:${String(completionSeconds % 60).padStart(2, '0')}`;
+  const shareMarks = results.map(result => result.guess === 'timeout' ? '0' : result.correct ? '1' : 'x').join('');
   const shareText = `UNCANNY\n${shareMarks} ${score}/5\naccuracy ${perceptionPercent}%\ntime ${completionLabel}\nhttps://game-ai-one.vercel.app`;
 
   const handleShare = async () => {
@@ -60,192 +145,190 @@ export default function ResultsDebrief({ results, challenges, streak, setDate, c
   };
 
   return (
-    <main className="h-[100dvh] overflow-x-hidden overflow-y-auto bg-background text-foreground cinematic-bg">
-      <div className="noise-overlay" />
-      <section className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-3xl flex-col px-5 pb-[calc(env(safe-area-inset-bottom)+2rem)] pt-[calc(env(safe-area-inset-top)+1.5rem)] sm:px-6 lg:px-8">
-        <div className="flex min-w-0 items-center justify-between gap-4 font-mono text-[10px] uppercase tracking-[0.18em] text-muted/45">
+    <main className="h-[100dvh] overflow-x-hidden overflow-y-auto bg-background text-foreground">
+      <section className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-3xl flex-col px-8 pb-[calc(env(safe-area-inset-bottom)+2rem)] pt-[calc(env(safe-area-inset-top)+1.5rem)] sm:px-6 lg:px-8">
+        <div className="flex min-w-0 items-center justify-between gap-4 font-sans text-[9px] font-light uppercase tracking-[0.18em] text-muted/45">
           <span>{copy.results.label}</span>
           <span className="shrink-0">{setDate}</span>
         </div>
 
         <div className="mt-9 md:mt-10">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted/50 mb-4">
+          <div className="font-sans text-[9px] font-light uppercase tracking-[0.18em] text-muted/45 mb-4">
             {copy.results.metric}
           </div>
-          <div className="mt-2 flex flex-col gap-6 border-l-2 border-outline-variant pl-6 py-2">
-            <p className="max-w-sm text-xl sm:text-2xl leading-snug text-on-surface font-semibold italic">
+          <div className="mt-2 flex flex-col gap-4 py-1">
+            <p className="max-w-sm text-xl sm:text-2xl leading-snug text-on-surface font-light font-serif italic">
               &quot;{resultReflection(score)}&quot;
             </p>
-            <div className="flex items-center gap-4">
-              <div className="font-mono text-xs uppercase text-outline tracking-widest">Confidence Index:</div>
-              <div className="flex items-end gap-1">
-                <span className="text-2xl font-mono text-outline leading-none">{perceptionPercent}</span>
-                <span className="pb-0.5 text-sm font-mono text-muted/40">%</span>
+            <div className="flex items-center gap-3">
+              <span className="font-sans text-[10px] font-light uppercase text-muted/40 tracking-wider">Confidence Index:</span>
+              <div className="flex items-end gap-0.5">
+                <span className="text-xl font-sans text-foreground leading-none font-light">{perceptionPercent}</span>
+                <span className="pb-0.5 text-[9px] font-sans text-muted/40">%</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-8 border-l border-outline/70 pl-4">
-          <p className="text-base leading-relaxed text-muted">
-            {copy.results.comparison(comparison)}
-          </p>
-          {streak > 0 && (
-            <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted/45">
-              {copy.results.recurrence(streak)}
-            </p>
-          )}
-          <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted/45">
-            {copy.results.exposure(completionLabel)}
-          </p>
-          <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted/35">
-            {copy.results.sample}
+        {/* ── Editorial Narrative Zone ── */}
+        <div className="mt-10">
+          <p className="text-sm leading-relaxed text-muted/85 font-sans font-light">
+            Your perception has aligned with <span className="text-foreground font-medium">{comparison}%</span> of other observers in today&apos;s visual registry. You resolved these five records in <span className="text-foreground font-medium">{completionLabel}</span>. {speedObs} {tagInsight ? `${tagInsight}.` : ''} {streak > 0 ? `Active streak: ${streak} consecutive ${streak === 1 ? 'day' : 'days'}.` : ''}
           </p>
         </div>
 
-        {/* ── Speed Observation ── */}
-        <div className="mt-5 border-l border-outline/40 pl-4">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted/45 mb-1">
-            observation
-          </p>
-          <p className="text-sm leading-relaxed text-muted/72 italic">
-            {speedObs}
-          </p>
-          {tagInsight && (
-            <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.16em] text-muted/40">
-              {tagInsight}
-            </p>
-          )}
-        </div>
-
+        {/* ── Misleading Image block (Borderless and integrated) ── */}
         {misleadingChallenge && (
-          <div className="mt-8">
-            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted/50">
+          <div className="mt-10">
+            <div className="font-sans text-[9px] font-light uppercase tracking-[0.18em] text-muted/45 mb-3.5">
               {copy.results.misleading}
             </div>
-            <div className="mt-3 grid gap-4 md:grid-cols-[5.5rem_1fr]">
-              <div className="relative aspect-[16/10] w-full overflow-hidden border border-outline-variant bg-surface md:aspect-[4/5] md:w-auto">
-                <img
+            <div className="grid gap-5 sm:grid-cols-[6rem_1fr] items-center">
+              <div className="relative aspect-[16/10] w-full overflow-hidden bg-surface rounded-[2px] sm:aspect-[4/5] sm:w-24">
+                <Image
                   src={misleadingChallenge.image_url}
                   alt="Most misleading visual"
-                  className="h-full w-full object-cover"
+                  fill
+                  className="object-cover opacity-90"
                   draggable={false}
+                  sizes="(max-width: 768px) 100vw, 96px"
                 />
               </div>
-              <p className="min-w-0 self-center text-sm leading-relaxed text-muted/72">
+              <p className="min-w-0 text-xs leading-relaxed text-muted/65 font-sans font-light max-w-md">
                 {copy.results.misleadingNote}
               </p>
             </div>
           </div>
         )}
 
-        <div className="mt-8">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted/50">
+        {/* ── Selection index button row ── */}
+        <div className="mt-10">
+          <div className="font-sans text-[9px] font-light uppercase tracking-[0.18em] text-muted/45 mb-4">
             {copy.results.marks}
           </div>
-          <div className="mt-3 grid grid-cols-5 gap-1.5 sm:gap-2">
-            {results.map((result, index) => (
-              <button
-                type="button"
-                key={`${result.challengeId}-${index}`}
-                onClick={() => setSelectedIndex(index)}
-                className={`min-w-0 border px-1.5 py-3 text-center font-mono text-[10px] uppercase tracking-normal active:translate-y-px sm:px-2 sm:text-xs ${
-                  selectedIndex === index
-                    ? 'border-foreground text-foreground'
-                    : result.guess === 'timeout'
-                      ? 'border-outline-variant text-muted/45'
-                      : result.correct
-                        ? 'border-outline text-muted'
-                        : 'border-ai text-ai'
-                }`}
-              >
-                {copy.results.mark(result)}
-              </button>
-            ))}
+          <div className="grid grid-cols-5 gap-2">
+            {results.map((result, index) => {
+              const isSelected = selectedIndex === index;
+              const status = result.guess === 'timeout'
+                ? 'Skipped'
+                : result.correct
+                  ? 'Correct'
+                  : 'Fooled';
+              
+              const statusColor = result.guess === 'timeout'
+                ? 'text-muted/30'
+                : result.correct
+                  ? 'text-correct/70'
+                  : 'text-wrong/70';
+
+              return (
+                <button
+                  type="button"
+                  key={`${result.challengeId}-${index}`}
+                  onClick={() => setSelectedIndex(index)}
+                  className={`flex flex-col items-center min-w-0 py-2.5 text-center transition-all duration-150 rounded-[3px] cursor-pointer ${
+                    isSelected
+                      ? 'text-foreground font-medium'
+                      : 'text-muted/50 hover:text-muted/70'
+                  }`}
+                >
+                  <span className="font-sans text-xs font-light">0{index + 1}</span>
+                  <span className={`text-[8px] uppercase tracking-wider mt-1 ${statusColor}`}>
+                    {status}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
+        {/* ── Selected Challenge Detail (Borderless observation narrative) ── */}
         {selectedResult && selectedImageUrl && (
-          <div className="mt-6 border border-outline-variant bg-background/45">
-            <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_12rem]">
-              <div className="relative aspect-[16/10] overflow-hidden bg-surface md:aspect-auto md:min-h-44">
-                <img
+          <div className="mt-8 pb-4">
+            <div className="grid gap-6 sm:grid-cols-[1fr_13rem] items-start">
+              <div className="relative aspect-[16/10] overflow-hidden bg-surface rounded-[2px] sm:aspect-[16/10] sm:h-28">
+                <Image
                   src={selectedImageUrl}
                   alt="Selected classification frame"
-                  className="h-full w-full object-cover"
+                  fill
+                  className="object-cover opacity-90"
                   draggable={false}
+                  sizes="(max-width: 768px) 100vw, 208px"
                 />
               </div>
-              <div className="border-t border-outline-variant p-4 md:border-l md:border-t-0">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted/45">
+              <div className="py-1">
+                <div className="font-sans text-[9px] font-light uppercase tracking-[0.18em] text-muted/45">
                   {copy.results.selectedFrame(selectedIndex)}
                 </div>
-                <div className="mt-4 grid gap-3 font-mono text-[10px] uppercase tracking-[0.14em] text-muted/60">
-                  <div>
-                    <span className="block text-muted/35">{copy.results.input}</span>
-                    <span className="mt-1 block text-foreground">
-                      {selectedGuess === 'timeout' ? copy.results.mark(selectedResult) : selectedGuess === 'real' ? copy.gameplay.real : copy.gameplay.ai}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="block text-muted/35">{copy.results.sourceClass}</span>
-                    <span className="mt-1 block text-foreground">
-                      {selectedAnswer === undefined ? copy.results.unavailable : selectedAnswer === 'real' ? copy.gameplay.real : copy.gameplay.ai}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="block text-muted/35">{copy.results.markLabel}</span>
-                    <span className={selectedResult.correct ? 'mt-1 block text-foreground' : 'mt-1 block text-ai'}>
-                      {copy.results.mark(selectedResult)}
-                    </span>
-                  </div>
-                  {selectedResult.reasoningTag && (
-                    <div>
-                      <span className="block text-muted/35">noted</span>
-                      <span className="mt-1 block text-foreground">
-                        {selectedResult.reasoningTag}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                <p className="mt-3.5 text-sm font-sans font-light leading-relaxed text-muted max-w-sm">
+                  {getSelectionNarrative(selectedResult)}
+                </p>
               </div>
             </div>
           </div>
         )}
 
-        <div className="grid gap-4 pt-8 md:mt-auto md:gap-3 pb-8">
+        <div className="grid gap-4 mt-8 pb-8">
           <button
             id="share-btn"
             type="button"
             onClick={handleShare}
-            className="w-full border border-outline bg-foreground px-5 py-5 text-left text-background active:translate-y-px"
+            className="w-full bg-foreground text-background hover:bg-foreground/90 transition-all py-4 text-center font-sans text-xs uppercase tracking-[0.15em] font-medium rounded-[3px] active:scale-[0.985] cursor-pointer"
           >
-            <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-background/65 mb-1">
-              {copy.cta.export}
-            </span>
-            <span className="block min-w-0 text-lg sm:text-xl">Share results</span>
+            {copy.cta.export}
           </button>
+
+          {onUnlockExtraPlay && !adWatched && (
+            <button
+              type="button"
+              disabled={adLoading}
+              onClick={handleWatchAndReplay}
+              className="w-full border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-400 hover:bg-emerald-500/5 transition-all py-4 text-center font-sans text-xs uppercase tracking-[0.15em] font-light rounded-[3px] active:scale-[0.985] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {adLoading ? 'Loading ad…' : '▶ Watch & Play Again'}
+            </button>
+          )}
           
-          <div className="grid gap-4 md:grid-cols-2 md:gap-3">
+          <div className="grid gap-3 grid-cols-2">
             <a
               href="/profile"
-              className="min-w-0 border border-outline-variant px-4 py-4 text-center font-mono text-xs uppercase tracking-[0.1em] text-muted hover:text-foreground transition-colors"
+              className="min-w-0 border border-outline/10 py-3.5 text-center font-sans text-xs uppercase tracking-[0.12em] text-muted hover:text-foreground hover:bg-white/5 transition-all rounded-[3px]"
             >
               View Record
             </a>
             <a
               href="/leaderboard"
-              className="min-w-0 border border-outline-variant px-4 py-4 text-center font-mono text-xs uppercase tracking-[0.1em] text-muted hover:text-foreground transition-colors"
+              className="min-w-0 border border-outline/10 py-3.5 text-center font-sans text-xs uppercase tracking-[0.12em] text-muted hover:text-foreground hover:bg-white/5 transition-all rounded-[3px]"
             >
-              Compare Observers
+              Observers
             </a>
           </div>
 
-          <div className="mt-4 border-t border-outline-variant/50 pt-6 text-center">
-            <p className="text-sm leading-relaxed text-muted/65">
-              Today&apos;s set is complete. The archive will refresh tomorrow.
-            </p>
-          </div>
+          {!adAlreadyUnlocked && onRequestReflection && reflectionLevel < 3 && (
+            <div className="mt-4 border-t border-outline/5 pt-6 flex flex-col items-center">
+              <button
+                type="button"
+                disabled={cooldownRemaining > 0}
+                onClick={onRequestReflection}
+                className={`w-full border py-3.5 px-8 font-sans text-[10px] font-light uppercase tracking-[0.15em] transition-all text-center rounded-[2px] ${
+                  cooldownRemaining > 0
+                    ? 'border-outline/10 text-muted/35 cursor-not-allowed bg-transparent'
+                    : 'border-accent-amber/25 hover:border-accent-amber/50 text-accent-amber hover:bg-white/2 cursor-pointer'
+                }`}
+              >
+                {cooldownRemaining > 0 ? 'Allow the archive to stabilize.' : reflectionLevel === 1 ? 'Continue Observation' : reflectionLevel === 2 ? 'One final unstable record remains.' : 'Request Reflection'}
+              </button>
+              <p className="text-[9px] font-sans font-light tracking-wide text-muted/30 mt-3 text-center">
+                {cooldownRemaining > 0
+                  ? `Neural pathways stabilizing... (${cooldownRemaining}s remaining)`
+                  : reflectionLevel === 1
+                    ? 'Two unstable records remain.'
+                    : reflectionLevel === 2
+                      ? 'This archive was not intended for prolonged observation.'
+                      : 'Observe another sequence. A sponsor-supported reflection will play.'}
+              </p>
+            </div>
+          )}
         </div>
       </section>
     </main>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 function isAuthorized(request: NextRequest) {
   const secret = process.env.ADMIN_SECRET;
@@ -14,7 +15,7 @@ function isAuthorized(request: NextRequest) {
   return false;
 }
 
-async function checkRejectionReasonColumn(supabase: any): Promise<boolean> {
+async function checkRejectionReasonColumn(supabase: SupabaseClient): Promise<boolean> {
   try {
     const { error } = await supabase
       .from('content_candidates')
@@ -52,7 +53,7 @@ export async function DELETE(
   const supabaseAdmin = getSupabaseAdmin();
   const hasRejectionReason = await checkRejectionReasonColumn(supabaseAdmin);
   
-  const updatePayload: Record<string, any> = {
+  const updatePayload: Record<string, unknown> = {
     status: 'deleted',
     reviewed_at: new Date().toISOString()
   };

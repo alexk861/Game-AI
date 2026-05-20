@@ -93,6 +93,7 @@ export async function generateAiCandidates(
       const { error: insertError } = await supabaseAdmin.from('content_candidates').insert({
         source: 'nano_banana',
         source_type: 'ai_generated',
+        source_photo_id: `ai_gen_${seed}`,
         answer: 'ai',
         image_url: imageUrl,
         image_thumb_url: imageUrl,

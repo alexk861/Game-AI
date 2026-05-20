@@ -52,15 +52,13 @@ export default function Timer({ duration, running, onExpire }: TimerProps) {
   return (
     <div className="relative w-full">
       {/* Countdown number */}
-      <div className={`flex items-center justify-center py-2 transition-all duration-300 ${
-        isCritical ? 'timer-critical-shake' : ''
-      }`}>
-        <span className={`font-mono text-sm tabular-nums transition-all duration-200 ${
+      <div className="flex items-center justify-center py-2">
+        <span className={`font-mono text-xs tabular-nums tracking-wider ${
           isCritical
-            ? 'text-2xl font-bold text-error timer-critical-pulse'
+            ? 'text-error font-semibold'
             : isUrgent
-              ? 'text-lg font-bold text-wrong/90'
-              : 'text-muted/70'
+              ? 'text-wrong font-medium'
+              : 'text-muted/75'
         }`}>
           {running ? (
             <>
@@ -74,9 +72,7 @@ export default function Timer({ duration, running, onExpire }: TimerProps) {
       </div>
 
       {/* Progress bar */}
-      <div className={`w-full h-1.5 bg-white/8 relative overflow-hidden ${
-        isUrgent ? 'h-2' : ''
-      }`}>
+      <div className="w-full h-1 bg-white/10 relative overflow-hidden">
         <div
           className="timer-bar h-full absolute left-0 top-0"
           style={{
@@ -87,23 +83,8 @@ export default function Timer({ duration, running, onExpire }: TimerProps) {
               : isUrgent
                 ? 'var(--wrong)'
                 : 'var(--outline)',
-            boxShadow: isCritical
-              ? '0 0 12px rgba(255,180,171,0.5), 0 0 4px rgba(255,180,171,0.3)'
-              : isUrgent
-                ? '0 0 8px rgba(160,64,64,0.4)'
-                : 'none',
           }}
         />
-        {/* Urgent glow behind bar */}
-        {isUrgent && (
-          <div
-            className="absolute left-0 top-0 h-full opacity-30 blur-sm"
-            style={{
-              width: `${percentage}%`,
-              backgroundColor: isCritical ? 'var(--error)' : 'var(--wrong)',
-            }}
-          />
-        )}
       </div>
     </div>
   );

@@ -14,12 +14,12 @@ export default function DecisionControls({ disabled, onDecision }: DecisionContr
         type="button"
         disabled={disabled}
         onClick={() => onDecision('real')}
-        className="min-h-16 border border-outline bg-surface/35 px-4 py-4 text-left transition-colors active:translate-y-px disabled:opacity-40"
+        className="min-h-16 bg-surface px-5 py-4 text-left transition-all duration-200 hover:bg-surface-container active:scale-[0.98] disabled:opacity-30 rounded-[3px] cursor-pointer"
       >
-        <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-muted/55">
+        <span className="block font-sans font-light text-[9px] uppercase tracking-[0.2em] text-muted/50">
           {copy.gameplay.decisionKicker}
         </span>
-        <span className="mt-1 block text-xl font-normal tracking-normal text-foreground">
+        <span className="mt-1 block text-lg font-sans font-light tracking-wide text-foreground">
           {copy.gameplay.real}
         </span>
       </button>
@@ -27,12 +27,12 @@ export default function DecisionControls({ disabled, onDecision }: DecisionContr
         type="button"
         disabled={disabled}
         onClick={() => onDecision('ai')}
-        className="min-h-16 border border-ai/70 bg-ai/10 px-4 py-4 text-left transition-colors active:translate-y-px disabled:opacity-40"
+        className="min-h-16 bg-surface px-5 py-4 text-left transition-all duration-200 hover:bg-surface-container active:scale-[0.98] disabled:opacity-30 rounded-[3px] cursor-pointer"
       >
-        <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-muted/55">
+        <span className="block font-sans font-light text-[9px] uppercase tracking-[0.2em] text-muted/50">
           {copy.gameplay.decisionKicker}
         </span>
-        <span className="mt-1 block text-xl font-normal tracking-normal text-foreground">
+        <span className="mt-1 block text-lg font-sans font-light tracking-wide text-foreground">
           {copy.gameplay.ai}
         </span>
       </button>

@@ -1,8 +1,8 @@
 'use client';
 
 import type { GuessResult, RevealData } from '@/lib/types';
-import { copy, revealConsensus, revealOrigin } from '@/lib/copy';
 import { TIMER_DURATION_SECONDS } from '@/lib/gameConfig';
+import Image from 'next/image';
 
 interface RevealScreenProps {
   imageUrl: string;
@@ -10,127 +10,161 @@ interface RevealScreenProps {
   result: GuessResult | null;
 }
 
-export default function RevealScreen({ imageUrl, data, result }: RevealScreenProps) {
-  const answerText = data.answer === 'real' ? copy.reveal.real : copy.reveal.ai;
-  const verdict = result?.guess === 'timeout'
-    ? copy.reveal.timeout
-    : data.correct
-      ? copy.reveal.correct
-      : copy.reveal.wrong;
-  const origin = revealOrigin(data);
+function getEmotionalSentence(
+  isCorrect: boolean,
+  isAI: boolean,
+  timeTaken: number | null,
+  failureRate: number
+): string {
+  const isHesitant = timeTaken !== null && timeTaken > 5.5;
 
+  if (timeTaken === null) {
+    return "The uncertainty held you too long.";
+  }
+
+  if (isCorrect) {
+    if (timeTaken < 2.5) {
+      return isAI
+        ? "Your instinct immediately detected the simulation."
+        : "Your instinct immediately recognized the organic truth.";
+    }
+    if (isHesitant) {
+      return "You hesitated, but saw through it in the end.";
+    }
+    return isAI
+      ? "You noticed something others missed."
+      : "You recognized the authentic detail.";
+  } else {
+    if (failureRate > 62) {
+      return isAI
+        ? "Most observers trusted this representation."
+        : "This image cast doubt in almost everyone.";
+    }
+    if (isAI) {
+      return "You trusted a manufactured reality.";
+    }
+    return "You doubted the authentic photograph.";
+  }
+}
+
+export default function RevealScreen({ imageUrl, data, result }: RevealScreenProps) {
+  const isAI = data.answer === 'ai';
   const totalGuesses = data.guesses_ai + data.guesses_real;
   const failureRate = totalGuesses > 0 
-    ? Math.round(((data.answer === 'ai' ? data.guesses_real : data.guesses_ai) / totalGuesses) * 100) 
+    ? Math.round(((isAI ? data.guesses_real : data.guesses_ai) / totalGuesses) * 100) 
     : 0;
   
-  const timeTaken = result?.timeRemaining !== undefined ? TIMER_DURATION_SECONDS - result.timeRemaining : null;
-  const isFast = timeTaken !== null && timeTaken < 2.5;
+  const timeRemainingVal = result?.timeRemaining ?? null;
+  const timeTaken = result?.guess === 'timeout' 
+    ? null 
+    : timeRemainingVal !== null 
+      ? TIMER_DURATION_SECONDS - timeRemainingVal 
+      : null;
 
-  const isAI = data.answer === 'ai';
+  const isCorrect = result?.correct ?? false;
+  const isTimeout = result?.guess === 'timeout';
+
+  const emotionalSentence = getEmotionalSentence(
+    isCorrect,
+    isAI,
+    timeTaken,
+    failureRate
+  );
 
   return (
-    <main className="relative grid h-[100dvh] grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-background cinematic-bg reveal-breath animate-in fade-in duration-500">
-      <div className="ambient-field" />
-      <section className="relative min-h-0 overflow-hidden">
-        <img
-          src={imageUrl}
-          alt="Revealed visual record"
-          className="absolute inset-0 h-full w-full object-cover opacity-86"
-          draggable={false}
-        />
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(19,19,19,0.28),rgba(19,19,19,0.06)_38%,rgba(19,19,19,0.92))]" />
-        <div className="analog-drift absolute inset-0 pointer-events-none" />
-        <div className="noise-overlay" />
+    <main className="relative h-[100dvh] w-full overflow-hidden bg-background animate-in fade-in duration-500">
+      {/* ── Fullscreen Background Photograph ── */}
+      <Image
+        src={imageUrl}
+        alt="Revealed visual record"
+        fill
+        className="object-cover opacity-50"
+        draggable={false}
+        sizes="100vw"
+        priority
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-background/85 via-background/25 to-transparent" />
 
-        {/* ── SOURCE BADGE: Large, unmissable AI/REAL indicator ── */}
-        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-          <div className={`reveal-source-badge px-8 py-4 border-2 ${
-            isAI
-              ? 'border-error/80 bg-error/15 backdrop-blur-sm'
-              : 'border-muted/60 bg-muted/10 backdrop-blur-sm'
-          }`}>
-            <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-center mb-1 opacity-60">
-              this image was
-            </div>
-            <div className={`font-mono text-3xl font-bold uppercase tracking-[0.2em] text-center ${
-              isAI ? 'text-error' : 'text-foreground'
-            }`}>
-              {isAI ? '⚡ AI GENERATED' : '📷 REAL PHOTO'}
-            </div>
-          </div>
-        </div>
-
-        {/* Corner source badge */}
-        <div className={`absolute top-4 right-4 z-20 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] ${
-          isAI
-            ? 'bg-error/20 border border-error/50 text-error'
-            : 'bg-muted/15 border border-muted/40 text-muted'
-        }`}>
-          {isAI ? 'AI' : 'REAL'}
-        </div>
-      </section>
-
-      <section className="relative z-10 border-t border-outline-variant/70 bg-background/96 px-5 pb-[calc(env(safe-area-inset-bottom)+1.6rem)] pt-6 reveal-flash">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted/50">
-          {copy.reveal.label}
-        </div>
-        <h1 className="mt-3 max-w-[18rem] text-3xl font-normal leading-[0.98] text-foreground">
-          {answerText}
-        </h1>
-        <p className={`mt-3 max-w-sm text-base leading-snug ${
-          data.correct ? 'text-muted' : 'text-wrong/90'
-        }`}>
-          {verdict}
-        </p>
-        <div className="mt-5 border-l border-outline/70 pl-4">
-          <p className="font-mono text-[10px] uppercase tracking-[0.15em] leading-relaxed text-muted/55">
-            {revealConsensus(data)}
-          </p>
-
-          <div className="mt-4 mb-4 grid gap-2.5 border-y border-outline-variant/40 py-3 max-w-xs">
-            {timeTaken !== null && (
-              <div className="flex justify-between items-center font-mono text-[10px] uppercase text-outline">
-                <span>YOUR REACTION:</span>
-                <span className={isFast ? "text-primary font-bold" : ""}>
-                  {timeTaken.toFixed(1)}S {isFast && <span className="text-error animate-pulse ml-1 tracking-widest">(FAST)</span>}
-                </span>
-              </div>
-            )}
-            
-            <div className="flex justify-between items-center font-mono text-[10px] uppercase text-outline">
-              <span>GLOBAL FAILURE RATE:</span>
-              <span className={failureRate > 50 ? "text-error" : ""}>
-                {totalGuesses > 0 ? `${failureRate}%` : '--%'}
+      {/* ── Floating content block ── */}
+      <div className="absolute bottom-0 inset-x-0 z-20 px-8 pb-[calc(env(safe-area-inset-bottom)+2rem)] pt-24 pointer-events-none">
+        <div className="pointer-events-auto flex flex-col max-w-xl mx-auto w-full">
+          
+          {/* Immediate Correctness Verdict (0ms) - Borderless pure text indicators */}
+          <div className="mb-4">
+            {isTimeout ? (
+              <span className="inline-block text-[10px] font-sans font-medium tracking-[0.2em] uppercase text-wrong">
+                TIME EXPIRED
               </span>
-            </div>
-            
-            <div className="flex justify-between items-center font-mono text-[10px] uppercase text-outline">
-              <span>TOTAL OBSERVERS:</span>
-              <span>{totalGuesses}</span>
-            </div>
+            ) : isCorrect ? (
+              <span className="inline-block text-[10px] font-sans font-medium tracking-[0.2em] uppercase text-correct">
+                CORRECT
+              </span>
+            ) : (
+              <span className="inline-block text-[10px] font-sans font-medium tracking-[0.2em] uppercase text-wrong">
+                WRONG
+              </span>
+            )}
           </div>
 
-          <p className="mt-3 text-sm leading-relaxed text-muted/72">
-            {origin}
-          </p>
-        </div>
+          {/* 800ms delayed sentence + kicker */}
+          <div className="animate-reveal-sentence">
+            {/* spaced sans kicker */}
+            <div className="font-sans text-[9px] font-light uppercase tracking-[0.24em] text-muted/50 mb-3.5 flex items-center gap-2">
+              {isAI ? (
+                <>
+                  <span className="text-accent-amber/90">⚡</span>
+                  <span>SYNTHETIC REPRESENTATION</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-correct/90">📷</span>
+                  <span>ORGANIC CAPTURE</span>
+                </>
+              )}
+            </div>
 
-        {/* ── NEXT IMAGE LOADING indicator ── */}
-        <div className="mt-5 pt-4 border-t border-outline-variant/30">
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted/50">
-              Next image loading…
-            </span>
-            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted/40 reveal-next-dots">
-              ●●●
-            </span>
+            {/* Large dynamic emotional sentence */}
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-light leading-[1.25] text-foreground tracking-wide font-serif italic mb-6">
+              &ldquo;{emotionalSentence}&rdquo;
+            </h1>
           </div>
-          <div className="w-full h-1 bg-white/8 overflow-hidden rounded-full">
-            <div className="reveal-next-bar h-full bg-outline/60" />
+
+          {/* 1600ms delayed metadata */}
+          <div className="animate-reveal-metadata space-y-4">
+            <div className="py-0.5 space-y-2 font-sans font-light">
+              <p className="text-xs leading-relaxed text-muted/70 max-w-md">
+                {isAI ? (
+                  data.ai_prompt ? (
+                    <span>Prompt: &ldquo;{data.ai_prompt}&rdquo;</span>
+                  ) : (
+                    <span>Synthetic generation using Midjourney.</span>
+                  )
+                ) : (
+                  data.photographer_name ? (
+                    <span>Captured by {data.photographer_name}.</span>
+                  ) : (
+                    <span>Authentic record. Verifiable source details.</span>
+                  )
+                )}
+              </p>
+
+              {/* Minimal inline stats */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-sans text-[9px] uppercase tracking-wider text-muted/40">
+                {timeTaken !== null && (
+                  <span>spent: {timeTaken.toFixed(1)}s</span>
+                )}
+                <span>consensus: {totalGuesses > 0 ? `${100 - failureRate}% correct` : '--%'}</span>
+                <span>observers: {totalGuesses}</span>
+              </div>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
+
+      {/* ── Minimalist Next Image loading line at the very bottom edge ── */}
+      <div className="absolute bottom-0 inset-x-0 z-30 h-1 bg-white/5 pointer-events-none">
+        <div className="reveal-next-bar h-full bg-primary/20" />
+      </div>
     </main>
   );
 }

@@ -10,7 +10,7 @@ const LOOKAHEAD_DAYS = 3;
 const SAFETY_BUFFER = 15;
 const MAX_AUTO_APPROVE = 30;
 const PLAYABLE_SLOTS = 5;
-const MAX_SLOTS = 9;
+const MAX_SLOTS = 11;
 
 /** Difficulty distribution per set_order slot */
 const SLOT_DIFFICULTY: Record<number, number> = {
@@ -23,6 +23,8 @@ const SLOT_DIFFICULTY: Record<number, number> = {
   7: 4, // Hard (Bonus)
   8: 4, // Hard (Bonus)
   9: 5, // Extreme (Black Archive)
+  10: 5,
+  11: 5,
 };
 
 // ─── Types ───
@@ -374,7 +376,7 @@ async function autoApproveCandidates(
   const hasRejectionReason = await checkRejectionReasonColumn(supabase);
   console.log(`[auto-fill] Schema check: 'rejection_reason' exists in DB = ${hasRejectionReason}`);
 
-  const updatePayload: Record<string, any> = {
+  const updatePayload: Record<string, unknown> = {
     status: 'auto_approved',
     reviewed_at: new Date().toISOString(),
   };
@@ -514,9 +516,9 @@ async function scheduleCandidates(
           picked = pickCandidate([realMedium, realHard, realEasy], gap.date);
         }
       } 
-      // AI generated: preferred slots 4,5,6,7,8,9
-      else if (slot >= 4 && slot <= 9) {
-        if (slot === 9) {
+      // AI generated: preferred slots 4,5,6,7,8,9,10,11
+      else if (slot >= 4 && slot <= 11) {
+        if (slot === 9 || slot === 10 || slot === 11) {
           picked = pickCandidate([aiSuspicious, aiHard, aiMedium, aiEasy], gap.date);
         } else if (targetDifficulty <= 2) {
           picked = pickCandidate([aiEasy, aiMedium, aiHard], gap.date);
@@ -565,7 +567,7 @@ async function scheduleCandidates(
       const answer = isReal ? 'real' : 'ai';
       const sourceCredit = isReal ? `Unsplash / ${picked.photographer_name || 'Unknown'}` : (picked.photographer_name || 'AI Generated');
 
-      const rawRow: Record<string, any> = {
+      const rawRow: Record<string, unknown> = {
         set_date: gap.date,
         set_order: slot,
         image_url: picked.image_url,
@@ -581,7 +583,7 @@ async function scheduleCandidates(
         download_location: picked.download_location,
       };
 
-      const filteredRow: Record<string, any> = {};
+      const filteredRow: Record<string, unknown> = {};
       for (const key of Object.keys(rawRow)) {
         if (challengesColumns.has(key)) {
           filteredRow[key] = rawRow[key];
@@ -674,7 +676,7 @@ export async function runAutoFill(supabase: SupabaseClient): Promise<AutoFillRep
     report.details.push(`Schedule gaps found in ${gaps.length} day(s): ${gaps.map(g => g.date).join(', ')}`);
 
     // 2. Select eligible candidates
-    const { selected, skippedLowScore, skippedDuplicates, skippedNoAttribution, skippedCategoryLimit, logs } =
+    const { selected, skippedLowScore, skippedDuplicates, skippedNoAttribution, logs } =
       await selectEligibleCandidates(supabase);
 
     report.skipped_low_score = skippedLowScore;

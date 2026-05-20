@@ -62,6 +62,8 @@ export default function AdminCandidatesPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [autoFillLoading, setAutoFillLoading] = useState(false);
   const [autoFillResult, setAutoFillResult] = useState<AutoFillResult | null>(null);
+  const [aiGenLoading, setAiGenLoading] = useState(false);
+  const [aiGenResult, setAiGenResult] = useState<{ message: string; generated: number; requested: number; current_backlog: number } | null>(null);
   
   const [filterSource, setFilterSource] = useState<'all' | 'real' | 'ai'>('all');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
@@ -262,6 +264,40 @@ export default function AdminCandidatesPage() {
     }
   };
 
+  const handleGenerateAI = async () => {
+    const confirmed = window.confirm(
+      'This will generate AI images using Pollinations/Gemini and add them as candidates for review.\n\nContinue?'
+    );
+    if (!confirmed) return;
+
+    setAiGenLoading(true);
+    setAiGenResult(null);
+    try {
+      const res = await fetch('/api/admin/generate-ai-candidates', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${secret}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ count: 5 }),
+      });
+      const data = await res.json();
+      setAiGenResult(data);
+      if (data.generated > 0) {
+        fetchData(secret);
+      }
+    } catch (err) {
+      setAiGenResult({
+        message: `Error: ${err}`,
+        generated: 0,
+        requested: 0,
+        current_backlog: 0,
+      });
+    } finally {
+      setAiGenLoading(false);
+    }
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
@@ -345,7 +381,7 @@ export default function AdminCandidatesPage() {
 
         {/* Auto-fill action and Filters */}
         <div className="mb-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-wrap">
             <button
               onClick={handleAutoFill}
               disabled={autoFillLoading}
@@ -353,12 +389,24 @@ export default function AdminCandidatesPage() {
             >
               {autoFillLoading ? 'Filling...' : 'Fill missing archive days'}
             </button>
+            <button
+              onClick={handleGenerateAI}
+              disabled={aiGenLoading}
+              className="text-sm text-purple-700 bg-purple-50 border border-purple-200 px-4 py-2 rounded-md hover:bg-purple-100 disabled:opacity-50 transition-colors"
+            >
+              {aiGenLoading ? 'Generating...' : '🤖 Generate AI Images'}
+            </button>
             {autoFillResult && (
               <span className={`text-xs ${autoFillResult.success ? 'text-green-700' : 'text-red-700'}`}>
                 {autoFillResult.triggered
                   ? `Scheduled ${autoFillResult.scheduled_count} · Approved ${autoFillResult.auto_approved_count} · ${autoFillResult.days_filled} day(s)`
                   : 'No fill needed — future schedule is healthy.'}
                 {autoFillResult.errors.length > 0 && ` · Errors: ${autoFillResult.errors.join(', ')}`}
+              </span>
+            )}
+            {aiGenResult && (
+              <span className={`text-xs ${aiGenResult.generated > 0 ? 'text-green-700' : 'text-orange-700'}`}>
+                {aiGenResult.message} (Backlog: {aiGenResult.current_backlog})
               </span>
             )}
           </div>
