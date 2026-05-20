@@ -51,16 +51,24 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
           rel="stylesheet"
         />
+        {/* H5 Games Ads — must be in head as raw script (Next.js Script adds data-nscript which AdSense rejects) */}
+        <script
+          async
+          crossOrigin="anonymous"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3572878125126394"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.adsbygoogle = window.adsbygoogle || [];
+              var adBreak = adConfig = function(o) { adsbygoogle.push(o); };
+              adConfig({ preloadAdBreaks: 'on', sound: 'on' });
+            `,
+          }}
+        />
       </head>
       <body className="bg-background text-foreground font-body antialiased">
         {children}
-
-        <Script
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3572878125126394"
-          strategy="afterInteractive"
-          crossOrigin="anonymous"
-          async
-        />
 
         {GA_ID && (
           <>

@@ -3,27 +3,27 @@
 import { useState, useCallback } from 'react';
 
 /**
- * useRewardedAd – provides a "rewarded ad" experience.
+ * useRewardedAd – provides a rewarded ad experience using Google H5 Games Ads.
+ *
+ * The global `adBreak()` function is initialized in layout.tsx via:
+ *   adConfig({ preloadAdBreaks: 'on', sound: 'on' });
  *
  * Strategy:
- *  1. If Google H5 Games Ads (adBreak API) is available AND healthy, use it.
- *  2. Otherwise, fall back to a timed interstitial overlay (CalmAdTransitionOverlay)
- *     so the game loop never locks out.
- *
- * The hook exposes:
- *  - triggerAd()    → call to start the ad / interstitial
- *  - adPlaying      → true while the ad or countdown is in progress
- *  - showOverlay    → true when the fallback overlay should render
- *  - overlayPhase   → 'decompressing' | 'reentering' for the overlay
+ *  1. Call adBreak({ type: 'reward', ... }) — Google will show a real rewarded video
+ *     if one is available (and AdSense H5 Games Ads is enabled for the publisher).
+ *  2. If no ad is available (adBreakDone fires with breakStatus !== 'viewed'),
+ *     fall back to the CalmAdTransitionOverlay interstitial.
+ *  3. If the SDK isn't loaded at all (ad blocker, network error), fall back immediately.
  */
 
 declare global {
   interface Window {
     adsbygoogle: any[];
+    adBreak: (o: any) => void;
   }
 }
 
-const OVERLAY_DURATION_MS = 4000; // 4-second interstitial
+const OVERLAY_DURATION_MS = 4000; // 4-second fallback interstitial
 
 export function useRewardedAd(onRewardEarned: () => void, onAdClosed?: () => void) {
   const [adPlaying, setAdPlaying] = useState(false);
@@ -56,47 +56,55 @@ export function useRewardedAd(onRewardEarned: () => void, onAdClosed?: () => voi
   const triggerAd = useCallback(() => {
     if (typeof window === 'undefined') return;
 
-    // Try the real adBreak API first (H5 Games Ads)
-    if (window.adsbygoogle && typeof window.adsbygoogle.push === 'function') {
-      try {
-        setAdPlaying(true);
-        window.adsbygoogle.push({
-          adBreakType: 'reward',
-          adBreakName: 'unlock_extra_set',
-          beforeAd: () => {
-            // Ad is about to show — nothing to do
-          },
-          adDismissed: () => {
-            setAdPlaying(false);
-            if (onAdClosed) onAdClosed();
-          },
-          adViewed: () => {
-            setAdPlaying(false);
-            onRewardEarned();
-          },
-          adBreakDone: (placementInfo: any) => {
-            // adBreakDone fires in ALL cases — including when no ad is available
-            const status = placementInfo?.breakStatus;
-            console.log('[adBreak] status:', status);
+    // Check if the H5 Games Ads adBreak function is available
+    const adBreakFn = window.adBreak || ((o: any) => window.adsbygoogle?.push(o));
 
-            // If ad was actually shown and viewed/dismissed, the handlers above already fired.
-            // If no ad was available (status = 'notReady', 'timeout', 'error', 'noAdPreloaded', 'frequencyCapped')
-            // → fall back to the overlay interstitial.
-            if (status !== 'viewed' && status !== 'dismissed') {
-              console.log('[adBreak] No ad available, using interstitial overlay fallback.');
-              runFallbackOverlay();
-            }
-          },
-        });
-        return;
-      } catch (e) {
-        console.warn('[adsbygoogle] adBreak push failed, using fallback:', e);
-      }
+    if (!window.adsbygoogle) {
+      console.log('[useRewardedAd] No ad SDK loaded (ad blocker?). Using overlay fallback.');
+      runFallbackOverlay();
+      return;
     }
 
-    // Fallback: show the cinematic overlay interstitial
-    console.log('[useRewardedAd] Using interstitial overlay (no ad SDK).');
-    runFallbackOverlay();
+    setAdPlaying(true);
+
+    try {
+      adBreakFn({
+        type: 'reward',                    // H5 Games Ads rewarded format
+        name: 'unlock_extra_set',
+        beforeAd: () => {
+          console.log('[adBreak] Ad starting...');
+        },
+        afterAd: () => {
+          console.log('[adBreak] Ad finished.');
+        },
+        adDismissed: () => {
+          // User skipped the ad — no reward
+          console.log('[adBreak] Ad dismissed by user.');
+          setAdPlaying(false);
+          if (onAdClosed) onAdClosed();
+        },
+        adViewed: () => {
+          // User watched the full ad — grant reward!
+          console.log('[adBreak] Ad viewed — reward granted!');
+          setAdPlaying(false);
+          onRewardEarned();
+        },
+        adBreakDone: (placementInfo: any) => {
+          const status = placementInfo?.breakStatus;
+          console.log('[adBreak] Done, status:', status);
+
+          // If ad was viewed or dismissed, the handlers above already fired.
+          // If no ad was available, fall back to overlay.
+          if (status !== 'viewed' && status !== 'dismissed') {
+            console.log('[adBreak] No ad available (status:', status, '). Using overlay fallback.');
+            runFallbackOverlay();
+          }
+        },
+      });
+    } catch (e) {
+      console.warn('[adBreak] Push failed, using overlay fallback:', e);
+      runFallbackOverlay();
+    }
   }, [onRewardEarned, onAdClosed, runFallbackOverlay]);
 
   return { triggerAd, adPlaying, showOverlay, overlayPhase };
