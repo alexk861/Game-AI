@@ -49,7 +49,10 @@ export async function generateAiCandidates(
     .gte('suspicious_score', 70)
     .in('status', ['review', 'approved', 'auto_approved']);
 
-  if (countError) throw new Error(`Backlog count query failed: ${countError.message}`);
+  if (countError) {
+    const details = [countError.message, countError.details, countError.hint, countError.code].filter(Boolean).join(' | ');
+    throw new Error(`Backlog count query failed: ${details || JSON.stringify(countError)}`);
+  }
 
   const currentBacklog = count || 0;
   let countToGenerate = options.requestedCount ?? 0;
