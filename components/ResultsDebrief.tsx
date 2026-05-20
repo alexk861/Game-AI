@@ -6,6 +6,7 @@ import { analytics } from '@/lib/analytics';
 import { copy, resultReflection, speedObservation, reasoningInsight } from '@/lib/copy';
 import { TIMER_DURATION_SECONDS } from '@/lib/gameConfig';
 import { useRewardedAd } from '@/hooks/useRewardedAd';
+import CalmAdTransitionOverlay from './CalmAdTransitionOverlay';
 import Image from 'next/image';
 
 interface ResultsDebriefProps {
@@ -64,22 +65,15 @@ export default function ResultsDebrief({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
   const [adWatched, setAdWatched] = useState(false);
-  const [adLoading, setAdLoading] = useState(false);
 
   const handleExtraPlayReward = useCallback(() => {
     setAdWatched(true);
-    setAdLoading(false);
     if (onUnlockExtraPlay) onUnlockExtraPlay();
   }, [onUnlockExtraPlay]);
 
-  const handleExtraPlayAdClosed = useCallback(() => {
-    setAdLoading(false);
-  }, []);
-
-  const { triggerAd: triggerExtraPlayAd } = useRewardedAd(handleExtraPlayReward, handleExtraPlayAdClosed);
+  const { triggerAd: triggerExtraPlayAd, adPlaying, showOverlay, overlayPhase } = useRewardedAd(handleExtraPlayReward);
 
   const handleWatchAndReplay = useCallback(() => {
-    setAdLoading(true);
     triggerExtraPlayAd();
   }, [triggerExtraPlayAd]);
 
@@ -281,13 +275,15 @@ export default function ResultsDebrief({
           {onUnlockExtraPlay && !adWatched && (
             <button
               type="button"
-              disabled={adLoading}
+              disabled={adPlaying}
               onClick={handleWatchAndReplay}
               className="w-full border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-400 hover:bg-emerald-500/5 transition-all py-4 text-center font-sans text-xs uppercase tracking-[0.15em] font-light rounded-[3px] active:scale-[0.985] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {adLoading ? 'Loading ad…' : '▶ Watch & Play Again'}
+              {adPlaying ? 'Playing…' : '▶ Watch & Play Again'}
             </button>
           )}
+
+          {showOverlay && <CalmAdTransitionOverlay state={overlayPhase} />}
           
           <div className="grid gap-3 grid-cols-2">
             <a

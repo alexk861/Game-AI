@@ -1,6 +1,21 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+
+/**
+ * useRewardedAd – provides a "rewarded ad" experience.
+ *
+ * Strategy:
+ *  1. If Google H5 Games Ads (adBreak API) is available AND healthy, use it.
+ *  2. Otherwise, fall back to a timed interstitial overlay (CalmAdTransitionOverlay)
+ *     so the game loop never locks out.
+ *
+ * The hook exposes:
+ *  - triggerAd()    → call to start the ad / interstitial
+ *  - adPlaying      → true while the ad or countdown is in progress
+ *  - showOverlay    → true when the fallback overlay should render
+ *  - overlayPhase   → 'decompressing' | 'reentering' for the overlay
+ */
 
 declare global {
   interface Window {
@@ -8,87 +23,81 @@ declare global {
   }
 }
 
+const OVERLAY_DURATION_MS = 4000; // 4-second interstitial
+
 export function useRewardedAd(onRewardEarned: () => void, onAdClosed?: () => void) {
-  const [adLoaded, setAdLoaded] = useState(false);
   const [adPlaying, setAdPlaying] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [overlayPhase, setOverlayPhase] = useState<'decompressing' | 'reentering'>('decompressing');
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
+  const runFallbackOverlay = useCallback(() => {
+    setAdPlaying(true);
+    setShowOverlay(true);
+    setOverlayPhase('decompressing');
 
-    // Check if the script has initialized
-    const checkInterval = setInterval(() => {
-      if (window.adsbygoogle) {
-        clearInterval(checkInterval);
-        
-        // Push initial game config if not already initialized
-        try {
-          window.adsbygoogle.push({
-            preloadAdBreaks: 'on',
-            onAdBreakDone: (info: any) => {
-              console.log('[adBreak] H5 Games Ads Done:', info);
-            }
-          });
-        } catch {
-          // Might already be initialized, ignore
-        }
-        
-        setAdLoaded(true);
-      }
-    }, 200);
+    // Phase 1: "decompressing" for most of the duration
+    const reenterTimer = setTimeout(() => {
+      setOverlayPhase('reentering');
+    }, OVERLAY_DURATION_MS - 1200);
 
-    // Timeout check after 10 seconds to stop polling if ad blockers are active
-    const timeoutId = setTimeout(() => {
-      clearInterval(checkInterval);
-    }, 10000);
+    // Phase 2: complete → grant reward
+    const doneTimer = setTimeout(() => {
+      setShowOverlay(false);
+      setAdPlaying(false);
+      onRewardEarned();
+    }, OVERLAY_DURATION_MS);
 
     return () => {
-      clearInterval(checkInterval);
-      clearTimeout(timeoutId);
+      clearTimeout(reenterTimer);
+      clearTimeout(doneTimer);
     };
-  }, []);
+  }, [onRewardEarned]);
 
   const triggerAd = useCallback(() => {
     if (typeof window === 'undefined') return;
 
-    // Usability Fallback: if adsbygoogle script fails to load (due to adblockers/network),
-    // let's grant the reward fallback immediately so the game loop never freezes or locks out players.
-    if (!window.adsbygoogle) {
-      console.warn('[adsbygoogle] Script not loaded. Granting reward fallback.');
-      onRewardEarned();
-      return;
+    // Try the real adBreak API first (H5 Games Ads)
+    if (window.adsbygoogle && typeof window.adsbygoogle.push === 'function') {
+      try {
+        setAdPlaying(true);
+        window.adsbygoogle.push({
+          adBreakType: 'reward',
+          adBreakName: 'unlock_extra_set',
+          beforeAd: () => {
+            // Ad is about to show — nothing to do
+          },
+          adDismissed: () => {
+            setAdPlaying(false);
+            if (onAdClosed) onAdClosed();
+          },
+          adViewed: () => {
+            setAdPlaying(false);
+            onRewardEarned();
+          },
+          adBreakDone: (placementInfo: any) => {
+            // adBreakDone fires in ALL cases — including when no ad is available
+            const status = placementInfo?.breakStatus;
+            console.log('[adBreak] status:', status);
+
+            // If ad was actually shown and viewed/dismissed, the handlers above already fired.
+            // If no ad was available (status = 'notReady', 'timeout', 'error', 'noAdPreloaded', 'frequencyCapped')
+            // → fall back to the overlay interstitial.
+            if (status !== 'viewed' && status !== 'dismissed') {
+              console.log('[adBreak] No ad available, using interstitial overlay fallback.');
+              runFallbackOverlay();
+            }
+          },
+        });
+        return;
+      } catch (e) {
+        console.warn('[adsbygoogle] adBreak push failed, using fallback:', e);
+      }
     }
 
-    setAdPlaying(true);
+    // Fallback: show the cinematic overlay interstitial
+    console.log('[useRewardedAd] Using interstitial overlay (no ad SDK).');
+    runFallbackOverlay();
+  }, [onRewardEarned, onAdClosed, runFallbackOverlay]);
 
-    try {
-      window.adsbygoogle.push({
-        adBreakType: 'reward',
-        adBreakName: 'unlock_extra_set',
-        beforeAdRecieved: () => {
-          // Pause game timers or audio
-        },
-        adDismissed: () => {
-          setAdPlaying(false);
-          if (onAdClosed) onAdClosed();
-        },
-        adViewed: () => {
-          setAdPlaying(false);
-          onRewardEarned(); // Reward granted!
-        },
-        adBreakDone: (status: any) => {
-          setAdPlaying(false);
-          console.log('[adBreak] complete status:', status);
-          if (onAdClosed) onAdClosed();
-        }
-      });
-    } catch (e) {
-      console.error('[adsbygoogle] Failed to push adBreak:', e);
-      setAdPlaying(false);
-      if (onAdClosed) onAdClosed();
-      // Fallback in case of runtime error
-      onRewardEarned();
-    }
-  }, [onRewardEarned, onAdClosed]);
-
-  return { triggerAd, adPlaying, adLoaded };
+  return { triggerAd, adPlaying, showOverlay, overlayPhase };
 }

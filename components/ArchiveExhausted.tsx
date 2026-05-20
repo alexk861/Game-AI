@@ -5,6 +5,7 @@ import TopNav from './TopNav';
 import BottomNav from './BottomNav';
 import Link from 'next/link';
 import { useRewardedAd } from '@/hooks/useRewardedAd';
+import CalmAdTransitionOverlay from './CalmAdTransitionOverlay';
 
 interface ArchiveExhaustedProps {
   onUnlockExtraPlay?: () => void;
@@ -23,22 +24,15 @@ export default function ArchiveExhausted({
 }: ArchiveExhaustedProps) {
   const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
   const [adWatched, setAdWatched] = useState(false);
-  const [adLoading, setAdLoading] = useState(false);
 
   const handleExtraPlayReward = useCallback(() => {
     setAdWatched(true);
-    setAdLoading(false);
     if (onUnlockExtraPlay) onUnlockExtraPlay();
   }, [onUnlockExtraPlay]);
 
-  const handleExtraPlayAdClosed = useCallback(() => {
-    setAdLoading(false);
-  }, []);
-
-  const { triggerAd: triggerExtraPlayAd } = useRewardedAd(handleExtraPlayReward, handleExtraPlayAdClosed);
+  const { triggerAd: triggerExtraPlayAd, adPlaying, showOverlay, overlayPhase } = useRewardedAd(handleExtraPlayReward);
 
   const handleWatchAndReplay = useCallback(() => {
-    setAdLoading(true);
     triggerExtraPlayAd();
   }, [triggerExtraPlayAd]);
 
@@ -118,17 +112,19 @@ export default function ArchiveExhausted({
               <div className="w-full flex flex-col items-center mb-6">
                 <button
                   type="button"
-                  disabled={adLoading}
+                  disabled={adPlaying}
                   onClick={handleWatchAndReplay}
                   className="w-full border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-400 hover:bg-emerald-500/5 transition-all py-3.5 px-8 text-center font-sans text-[10px] font-light uppercase tracking-[0.15em] rounded-[2px] active:scale-[0.985] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {adLoading ? 'Loading ad…' : '▶ Watch & Play Again'}
+                  {adPlaying ? 'Playing…' : '▶ Watch & Play Again'}
                 </button>
                 <p className="text-[9px] font-sans font-light tracking-wide text-muted/30 mt-3 text-center">
                   Watch a short sponsor message to replay today&apos;s archive.
                 </p>
               </div>
             )}
+
+            {showOverlay && <CalmAdTransitionOverlay state={overlayPhase} />}
             
             <div className="flex flex-col sm:flex-row gap-4 w-full justify-center mt-4">
               <Link 
