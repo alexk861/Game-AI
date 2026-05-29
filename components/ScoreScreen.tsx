@@ -14,14 +14,25 @@ export default function ScoreScreen({ results, streak, setDate }: ScoreScreenPro
   const score = results.filter(r => r.correct).length;
   const message = resultReflection(score);
 
+  const formatSetDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[1]}.${parts[2]}`; // MM.DD
+    }
+    return dateStr;
+  };
+
   const shareMarks = results
     .map(r => {
-      if (r.guess === 'timeout') return '0';
-      return r.correct ? '1' : 'x';
+      if (r.guess === 'timeout') return '⬚';
+      return r.correct ? '▣' : '☒';
     })
-    .join('');
+    .join(' ');
 
-  const shareText = `UNCANNY / OBSERVER FILE\n${shareMarks} ${score}/5\nrecurrence ${streak}\nhttps://game-ai-one.vercel.app`;
+  const dateFormatted = formatSetDate(setDate);
+  const targetDate = setDate || new Date().toISOString().split('T')[0];
+  const shareText = `UNCANNY\n${dateFormatted} · ${score}/5\n\n${shareMarks}\n\n${message}\nPlay the same set:\nhttps://game-ai-one.vercel.app/?set=${targetDate}`;
 
   const handleShare = async () => {
     const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
@@ -41,7 +52,7 @@ export default function ScoreScreen({ results, streak, setDate }: ScoreScreenPro
       await navigator.clipboard.writeText(shareText);
       const btn = document.getElementById('share-btn');
       if (btn) {
-        btn.textContent = copy.cta.exported;
+        btn.textContent = 'Copied.';
         setTimeout(() => { btn.textContent = copy.cta.export; }, 2000);
       }
     }

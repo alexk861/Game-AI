@@ -35,6 +35,10 @@ export default function SwipeCard({
   const [isInvestigating, setIsInvestigating] = useState(false);
   const investigateTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const [transformOrigin, setTransformOrigin] = useState('50% 50%');
+  const wasInvestigatingRef = useRef(false);
+
   const THRESHOLD = 76;
   const SWIPE_CANCEL_INVESTIGATE_THRESHOLD = 10;
 
@@ -50,6 +54,16 @@ export default function SwipeCard({
     }
   }, []);
 
+  const updateTransformOrigin = useCallback((clientX: number, clientY: number) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+    const clampedX = Math.max(0, Math.min(100, x));
+    const clampedY = Math.max(0, Math.min(100, y));
+    setTransformOrigin(`${clampedX}% ${clampedY}%`);
+  }, []);
+
   useEffect(() => {
     if (onNextImageUrl) {
       const img = new Image();
@@ -63,6 +77,7 @@ export default function SwipeCard({
       setImageErrored(false);
       setInvestigating(false);
       clearInvestigateTimer();
+      wasInvestigatingRef.current = false;
       setDragState({ isDragging: false, startX: 0, delta: 0 });
     }, 0);
 
@@ -72,38 +87,56 @@ export default function SwipeCard({
   const handlePointerDown = useCallback((event: React.PointerEvent) => {
     if (disabled || exitDirection) return;
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+    
+    const clientX = event.clientX;
+    const clientY = event.clientY;
+
     setDragState({
       isDragging: true,
-      startX: event.clientX,
+      startX: clientX,
       delta: 0,
     });
 
     clearInvestigateTimer();
+    wasInvestigatingRef.current = false;
+
     investigateTimerRef.current = setTimeout(() => {
       setInvestigating(true);
+      wasInvestigatingRef.current = true;
+      updateTransformOrigin(clientX, clientY);
+
       if (challengeId !== undefined && difficulty !== undefined) {
         analytics.investigateUsed(challengeId, difficulty);
       }
       if (navigator.vibrate) navigator.vibrate([10, 34, 10]);
-    }, 640);
-  }, [disabled, exitDirection, challengeId, difficulty, clearInvestigateTimer, setInvestigating]);
+    }, 450); // Fluid standard 450ms long-press delay
+  }, [disabled, exitDirection, challengeId, difficulty, clearInvestigateTimer, setInvestigating, updateTransformOrigin]);
 
   const handlePointerMove = useCallback((event: React.PointerEvent) => {
     if (!dragState.isDragging || disabled) return;
     const delta = event.clientX - dragState.startX;
     setDragState(previous => ({ ...previous, delta }));
 
-    if (Math.abs(delta) > SWIPE_CANCEL_INVESTIGATE_THRESHOLD) {
-      clearInvestigateTimer();
-      setInvestigating(false);
+    if (isInvestigating) {
+      updateTransformOrigin(event.clientX, event.clientY);
+    } else {
+      if (Math.abs(delta) > SWIPE_CANCEL_INVESTIGATE_THRESHOLD) {
+        clearInvestigateTimer();
+      }
     }
-  }, [dragState.isDragging, dragState.startX, disabled, clearInvestigateTimer, setInvestigating]);
+  }, [dragState.isDragging, dragState.startX, disabled, isInvestigating, clearInvestigateTimer, updateTransformOrigin]);
 
   const handlePointerUp = useCallback(() => {
     if (!dragState.isDragging || disabled) return;
 
     clearInvestigateTimer();
     setInvestigating(false);
+
+    if (wasInvestigatingRef.current) {
+      wasInvestigatingRef.current = false;
+      setDragState({ isDragging: false, startX: 0, delta: 0 });
+      return;
+    }
 
     if (Math.abs(dragState.delta) > THRESHOLD) {
       const direction = dragState.delta < 0 ? 'left' : 'right';
@@ -120,25 +153,34 @@ export default function SwipeCard({
   const handlePointerCancel = useCallback(() => {
     clearInvestigateTimer();
     setInvestigating(false);
+    wasInvestigatingRef.current = false;
     setDragState({ isDragging: false, startX: 0, delta: 0 });
   }, [clearInvestigateTimer, setInvestigating]);
 
   const clampedDelta = Math.max(-128, Math.min(128, dragState.delta));
-  const rotation = dragState.isDragging ? clampedDelta * 0.012 : 0;
-  const translateX = dragState.isDragging ? clampedDelta : 0;
-  const aiIntent = dragState.isDragging ? Math.min(Math.max(-clampedDelta / THRESHOLD, 0), 1) : 0;
-  const realIntent = dragState.isDragging ? Math.min(Math.max(clampedDelta / THRESHOLD, 0), 1) : 0;
+  const rotation = dragState.isDragging && !isInvestigating ? clampedDelta * 0.012 : 0;
+  const translateX = dragState.isDragging && !isInvestigating ? clampedDelta : 0;
+  const aiIntent = dragState.isDragging && !isInvestigating ? Math.min(Math.max(-clampedDelta / THRESHOLD, 0), 1) : 0;
+  const realIntent = dragState.isDragging && !isInvestigating ? Math.min(Math.max(clampedDelta / THRESHOLD, 0), 1) : 0;
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-surface">
       <div
+        ref={cardRef}
         className={`swipe-card absolute inset-0 overflow-hidden ${
           exitDirection === 'left' ? 'swipe-card-exit-left' :
           exitDirection === 'right' ? 'swipe-card-exit-right' : ''
         }`}
-        style={{
-          transform: exitDirection ? undefined : `translateX(${translateX}px) rotate(${rotation}deg)`,
-          cursor: disabled ? 'default' : 'grab',
+        style={exitDirection ? {
+          cursor: 'default'
+        } : {
+          translate: `${translateX}px 0px`,
+          rotate: `${rotation}deg`,
+          scale: `${dragState.isDragging && !isInvestigating ? 0.98 : 1}`,
+          transition: dragState.isDragging
+            ? 'scale 0.3s cubic-bezier(0.25, 1, 0.5, 1), rotate 0.3s cubic-bezier(0.25, 1, 0.5, 1)'
+            : 'translate 0.38s cubic-bezier(0.25, 1, 0.5, 1), rotate 0.38s cubic-bezier(0.25, 1, 0.5, 1), scale 0.38s cubic-bezier(0.25, 1, 0.5, 1)',
+          cursor: disabled ? 'default' : isInvestigating ? 'crosshair' : 'grab',
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -150,17 +192,17 @@ export default function SwipeCard({
         <NextImage
           src={imageUrl}
           alt="Unresolved visual record"
-          className={`absolute inset-0 h-full w-full select-none object-cover transition-all duration-500 ease-out ${isInvestigating ? '' : 'image-breathe'}`}
+          className={`absolute inset-0 h-full w-full select-none object-cover ${isInvestigating ? '' : 'image-breathe'}`}
           draggable={false}
           onError={() => setImageErrored(true)}
           fill
           priority
           sizes="(max-width: 768px) 100vw, 50vw"
           style={{
-            filter: isInvestigating
-              ? 'contrast(122%) brightness(78%) saturate(64%) blur(0.15px)'
-              : '',
-            transform: isInvestigating ? 'scale(1.095)' : '',
+            transformOrigin: transformOrigin,
+            transform: isInvestigating ? 'scale(1.7)' : 'scale(1)',
+            transition: isInvestigating ? 'transform 0.22s cubic-bezier(0.25, 1, 0.5, 1)' : 'transform 0.28s cubic-bezier(0.25, 1, 0.5, 1), transform-origin 0.2s ease-out',
+            filter: isInvestigating ? 'brightness(0.95) contrast(1.02)' : '',
           }}
         />
 
@@ -181,7 +223,6 @@ export default function SwipeCard({
           className="absolute inset-0 z-10 pointer-events-none"
           style={{ background: `linear-gradient(to right, rgba(159,166,178,${realIntent * 0.02}), transparent 50%, rgba(184,84,76,${aiIntent * 0.03}))` }}
         />
-        <InvestigationOverlay visible={isInvestigating} />
       </div>
     </div>
   );

@@ -53,13 +53,17 @@ export default function Timer({ duration, running, onExpire }: TimerProps) {
     <div className="relative w-full">
       {/* Countdown number */}
       <div className="flex items-center justify-center py-2">
-        <span className={`font-mono text-xs tabular-nums tracking-wider ${
-          isCritical
-            ? 'text-error font-semibold'
-            : isUrgent
-              ? 'text-wrong font-medium'
-              : 'text-muted/75'
-        }`}>
+        <span
+          className="font-mono text-xs tabular-nums tracking-wider"
+          style={{
+            color: isCritical
+              ? 'var(--error)'
+              : isUrgent
+                ? 'var(--accent-amber)'
+                : 'rgba(240, 236, 233, 0.65)',
+            fontWeight: isCritical ? 600 : isUrgent ? 500 : 300,
+          }}
+        >
           {running ? (
             <>
               <span className="text-[9px] uppercase tracking-[0.2em] mr-1.5 opacity-60">TIME</span>
@@ -81,7 +85,7 @@ export default function Timer({ duration, running, onExpire }: TimerProps) {
             backgroundColor: isCritical
               ? 'var(--error)'
               : isUrgent
-                ? 'var(--wrong)'
+                ? 'var(--accent-amber)'
                 : 'var(--outline)',
           }}
         />

@@ -71,6 +71,10 @@ export function useRewardedAd(onRewardEarned: () => void, onAdClosed?: () => voi
       adBreakFn({
         type: 'reward',                    // H5 Games Ads rewarded format
         name: 'unlock_extra_set',
+        beforeReward: (showAdFn: () => void) => {
+          console.log('[adBreak] Rewarded ad is ready. Triggering showAdFn...');
+          showAdFn();
+        },
         beforeAd: () => {
           console.log('[adBreak] Ad starting...');
         },

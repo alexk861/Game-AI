@@ -72,13 +72,13 @@ export default function RevealScreen({ imageUrl, data, result }: RevealScreenPro
   );
 
   return (
-    <main className="relative h-[100dvh] w-full overflow-hidden bg-background animate-in fade-in duration-500">
+    <main className="relative h-[100dvh] w-full overflow-hidden bg-background">
       {/* ── Fullscreen Background Photograph ── */}
       <Image
         src={imageUrl}
         alt="Revealed visual record"
         fill
-        className="object-cover opacity-50"
+        className="object-cover opacity-50 reveal-blur-sharp"
         draggable={false}
         sizes="100vw"
         priority
@@ -90,7 +90,7 @@ export default function RevealScreen({ imageUrl, data, result }: RevealScreenPro
         <div className="pointer-events-auto flex flex-col max-w-xl mx-auto w-full">
           
           {/* Immediate Correctness Verdict (0ms) - Borderless pure text indicators */}
-          <div className="mb-4">
+          <div className="reveal-verdict-scale mb-4">
             {isTimeout ? (
               <span className="inline-block text-[10px] font-sans font-medium tracking-[0.2em] uppercase text-wrong">
                 TIME EXPIRED

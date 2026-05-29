@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const mode = searchParams.get('mode');
+  const setParam = searchParams.get('set');
 
   const isReflection1 = mode === 'reflection' || mode === 'reflection-1';
   const isReflection2 = mode === 'reflection-2';
@@ -31,13 +32,13 @@ export async function GET(request: Request) {
     levelIndex = 3;
   }
 
-  const today = new Date().toISOString().split('T')[0];
+  const targetDate = setParam || new Date().toISOString().split('T')[0];
   const supabase = getSupabase();
 
   let query = supabase
     .from('challenges')
     .select('id, image_url, difficulty, set_order, answer')
-    .eq('set_date', today);
+    .eq('set_date', targetDate);
 
   if (isReflection) {
     query = query.in('set_order', expectedOrders);
@@ -55,8 +56,8 @@ export async function GET(request: Request) {
   let data = dbData || [];
   let usingFallback = false;
 
-  if (isReflection && (!data || data.length < expectedCount)) {
-    console.warn(`[daily-set] Warning: Database returned ${data?.length ?? 0} challenges for mode ${mode}. Falling back to pre-defined challenges.`);
+  if (!data || data.length < expectedCount) {
+    console.warn(`[daily-set] Warning: Database returned ${data?.length ?? 0} challenges for mode ${mode || 'primary'}. Falling back to pre-defined challenges.`);
     data = FALLBACK_CHALLENGES[levelIndex] || [];
     usingFallback = true;
   }
@@ -184,7 +185,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json(
     { 
-      date: today, 
+      date: targetDate, 
       challenges: sanitizedChallenges
     },
     {

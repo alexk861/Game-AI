@@ -14,7 +14,7 @@ export default function DecisionControls({ disabled, onDecision }: DecisionContr
         type="button"
         disabled={disabled}
         onClick={() => onDecision('real')}
-        className="min-h-16 bg-surface px-5 py-4 text-left transition-all duration-200 hover:bg-surface-container active:scale-[0.98] disabled:opacity-30 rounded-[3px] cursor-pointer"
+        className="min-h-16 bg-surface px-5 py-4 text-left transition-all duration-300 ease-out hover:bg-surface-container hover:scale-[1.005] active:scale-[0.97] disabled:opacity-30 rounded-[3px] cursor-pointer"
       >
         <span className="block font-sans font-light text-[9px] uppercase tracking-[0.2em] text-muted/50">
           {copy.gameplay.decisionKicker}
@@ -27,7 +27,7 @@ export default function DecisionControls({ disabled, onDecision }: DecisionContr
         type="button"
         disabled={disabled}
         onClick={() => onDecision('ai')}
-        className="min-h-16 bg-surface px-5 py-4 text-left transition-all duration-200 hover:bg-surface-container active:scale-[0.98] disabled:opacity-30 rounded-[3px] cursor-pointer"
+        className="min-h-16 bg-surface px-5 py-4 text-left transition-all duration-300 ease-out hover:bg-surface-container hover:scale-[1.005] active:scale-[0.97] disabled:opacity-30 rounded-[3px] cursor-pointer"
       >
         <span className="block font-sans font-light text-[9px] uppercase tracking-[0.2em] text-muted/50">
           {copy.gameplay.decisionKicker}

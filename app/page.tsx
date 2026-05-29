@@ -63,6 +63,10 @@ export default function Home() {
   const [lastReflectionUnlockAt, setLastReflectionUnlockAt] = useState<string | null>(null);
   const adRewardEarnedRef = useRef(false);
 
+  // Challenge Play States
+  const [isChallengePlay, setIsChallengePlay] = useState(false);
+  const [challengeSetParam, setChallengeSetParam] = useState<string | null>(null);
+
   const loadDailySet = useCallback(async (state: UncannyStorage, completed: boolean) => {
     try {
       const activeReflection = !!(state.rewardedReflectionUsedToday && !state.rewardedReflectionCompleted);
@@ -167,6 +171,27 @@ export default function Home() {
     }
   }, []);
 
+  const loadChallengeSet = useCallback(async (setQuery: string) => {
+    try {
+      setPhase('loading');
+      const res = await fetch(`/api/daily-set?set=${encodeURIComponent(setQuery)}`);
+      if (!res.ok) {
+        setError(copy.errors.archiveUnavailable);
+        setPhase('error');
+        return;
+      }
+
+      const data = await res.json();
+      setChallenges(data.challenges);
+      setSetDate(data.date);
+      setResults([]);
+      setPhase('entry');
+    } catch {
+      setError(copy.errors.networkUnstable);
+      setPhase('error');
+    }
+  }, []);
+
   const handleUnlockReflection = useCallback(() => {
     const state = unlockRewardedReflection();
     const newLevel = state.reflectionLevel ?? 1;
@@ -254,6 +279,16 @@ export default function Home() {
 
   useEffect(() => {
     const initId = setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      const setQuery = params.get('set');
+
+      if (setQuery) {
+        setIsChallengePlay(true);
+        setChallengeSetParam(setQuery);
+        void loadChallengeSet(setQuery);
+        return;
+      }
+
       const state = initTodaySession();
       setReflectionLevel(state.reflectionLevel ?? 0);
       setLastReflectionUnlockAt(state.lastReflectionUnlockAt ?? null);
@@ -272,16 +307,29 @@ export default function Home() {
     }, 0);
 
     return () => clearTimeout(initId);
-  }, [loadDailySet]);
+  }, [loadDailySet, loadChallengeSet]);
 
   const handleBegin = useCallback(() => {
+    if (isChallengePlay) {
+      setSessionStartedAt(Date.now());
+      setElapsedMs(0);
+      setCompletionMs(null);
+      setCurrentIndex(0);
+      setResults([]);
+      setTimerKey(prev => prev + 1);
+      challengeStartedAtRef.current = Date.now();
+      setPhase('playing');
+      setTimerRunning(true);
+      return;
+    }
+
     const state = markTodayStarted();
     setSessionStartedAt(state.todayStartedAt);
     setElapsedMs(0);
     setCompletionMs(null);
     setPhase('loading');
     void loadDailySet(state, false);
-  }, [loadDailySet]);
+  }, [isChallengePlay, loadDailySet]);
 
   const handleUnlockExtraPlay = useCallback(() => {
     const state = resetTodaySessionForAdExtraPlay();
@@ -318,6 +366,12 @@ export default function Home() {
         }
 
         setPhase('exhausted');
+      } else if (isChallengePlay) {
+        setCompletionMs(sessionStartedAt ? Date.now() - sessionStartedAt : 0);
+        setElapsedMs(sessionStartedAt ? Date.now() - sessionStartedAt : 0);
+        const score = currentResults.filter(result => result.correct).length;
+        analytics.setCompleted(score, 0, setDate);
+        setPhase('completed');
       } else {
         const finalState = completeSet();
         setStreak(finalState.currentStreak);
@@ -341,7 +395,7 @@ export default function Home() {
         analytics.challengeStarted(nextChallenge.id, nextChallenge.set_order, nextChallenge.difficulty);
       }
     }
-  }, [challenges, elapsedMs, setDate, isReflectionPlay]);
+  }, [challenges, elapsedMs, setDate, isReflectionPlay, isChallengePlay, sessionStartedAt]);
 
   const submitGuess = useCallback(async (guess: 'ai' | 'real' | 'timeout') => {
     if (phase !== 'playing' && phase !== 'investigating') return;
@@ -432,6 +486,14 @@ export default function Home() {
           setReflectionLevel(finishedState.reflectionLevel ?? 0);
           setLastReflectionUnlockAt(finishedState.lastReflectionUnlockAt ?? null);
         }
+      } else if (isChallengePlay) {
+        updatedResults = [...results, guessResult];
+        setResults(updatedResults);
+        const currentTotal = TOTAL_DAILY_CHALLENGES;
+        if (updatedResults.length >= currentTotal || updatedResults.length >= challenges.length) {
+          setCompletionMs(sessionStartedAt ? Date.now() - sessionStartedAt : 0);
+          setElapsedMs(sessionStartedAt ? Date.now() - sessionStartedAt : 0);
+        }
       } else {
         const finalState = addResult(guessResult);
         updatedResults = finalState.todayResults;
@@ -493,6 +555,14 @@ export default function Home() {
           const finishedState = completeReflection(finalDuration);
           setReflectionLevel(finishedState.reflectionLevel ?? 0);
           setLastReflectionUnlockAt(finishedState.lastReflectionUnlockAt ?? null);
+        }
+      } else if (isChallengePlay) {
+        updatedResults = [...results, guessResult];
+        setResults(updatedResults);
+        const currentTotal = TOTAL_DAILY_CHALLENGES;
+        if (updatedResults.length >= currentTotal || updatedResults.length >= challenges.length) {
+          setCompletionMs(sessionStartedAt ? Date.now() - sessionStartedAt : 0);
+          setElapsedMs(sessionStartedAt ? Date.now() - sessionStartedAt : 0);
         }
       } else {
         const finalState = addResult(guessResult);
@@ -598,6 +668,7 @@ export default function Home() {
           adAlreadyUnlocked={reflectionLevel >= 3}
           reflectionLevel={reflectionLevel}
           lastReflectionUnlockAt={lastReflectionUnlockAt}
+          isChallengePlay={isChallengePlay}
         />
         {adOverlayState !== 'none' && <CalmAdTransitionOverlay state={adOverlayState} level={activeAdLevel} />}
       </>

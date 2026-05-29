@@ -381,84 +381,95 @@ a {
   opacity: 0.06;
 }
 
-/* ── Atmosphere Refinement Pass ── */
-
-.global-instability {
-  animation: globalInstability 12s ease-in-out infinite alternate;
-}
-
-@keyframes globalInstability {
-  0% { opacity: 0.05; }
-  25% { opacity: 0.07; }
-  50% { opacity: 0.04; }
-  75% { opacity: 0.08; }
-  100% { opacity: 0.05; }
-}
+/* ── Atmosphere Refinement Pass (Premium Restraint) ── */
 
 .image-breathe {
-  animation: imageBreathe 14s ease-in-out infinite alternate;
+  animation: imageBreathe 18s ease-in-out infinite alternate;
 }
 
 @keyframes imageBreathe {
   from {
-    transform: scale(1.002) rotate(0deg);
-    filter: brightness(0.99) contrast(1.01);
+    transform: scale(1.0);
+    filter: brightness(0.995) contrast(1.005);
   }
   to {
-    transform: scale(1.012) rotate(0.05deg);
-    filter: brightness(1.01) contrast(0.99);
+    transform: scale(1.01);
+    filter: brightness(1.005) contrast(0.995);
   }
 }
 
-.micro-flicker {
-  animation: microFlicker 6s steps(2, end) infinite;
+/* ── Premium Card Tactile Dynamics ── */
+.swipe-card {
+  transition: transform 0.38s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform;
+  touch-action: none;
 }
 
-@keyframes microFlicker {
-  0%, 95%, 100% { opacity: 1; }
-  96% { opacity: 0.95; }
-  97% { opacity: 0.99; }
-  98% { opacity: 0.92; }
-  99% { opacity: 0.97; }
+.swipe-card-dragging {
+  transform: scale(0.98);
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-.chromatic-drift {
-  filter: drop-shadow(1px 0px 0px rgba(200, 150, 62, 0.15)) drop-shadow(-1px 0px 0px rgba(159, 166, 178, 0.15));
-  animation: chromaticDrift 8s ease-in-out infinite alternate;
+.swipe-card-exit-left {
+  animation: swipeLeft 0.52s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
-@keyframes chromaticDrift {
-  0% { filter: drop-shadow(1px 0px 0px rgba(200, 150, 62, 0.12)) drop-shadow(-1px 0px 0px rgba(159, 166, 178, 0.12)); }
-  50% { filter: drop-shadow(1.5px 0px 0px rgba(200, 150, 62, 0.18)) drop-shadow(-1.5px 0px 0px rgba(159, 166, 178, 0.18)); }
-  100% { filter: drop-shadow(0px 0px 0px rgba(200, 150, 62, 0.08)) drop-shadow(0px 0px 0px rgba(159, 166, 178, 0.08)); }
+.swipe-card-exit-right {
+  animation: swipeRight 0.52s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
-/* ── Timer Urgency Animations ── */
-
-.timer-critical-pulse {
-  animation: timerCriticalPulse 0.6s ease-in-out infinite;
+@keyframes swipeLeft {
+  to {
+    transform: translateX(-110%) rotate(-1.5deg) scale(0.96);
+    opacity: 0;
+  }
 }
 
-@keyframes timerCriticalPulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.08); }
+@keyframes swipeRight {
+  to {
+    transform: translateX(110%) rotate(1.5deg) scale(0.96);
+    opacity: 0;
+  }
 }
 
-.timer-critical-shake {
-  animation: timerCriticalShake 0.3s ease-in-out infinite;
+/* ── Blur-to-Sharp Reveal & Opacity Cascades ── */
+.reveal-blur-sharp {
+  animation: revealBlurSharp 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
-@keyframes timerCriticalShake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-1px); }
-  75% { transform: translateX(1px); }
+@keyframes revealBlurSharp {
+  from {
+    filter: blur(8px);
+    opacity: 0;
+    transform: scale(1.02);
+  }
+  to {
+    filter: blur(0);
+    opacity: 1;
+    transform: scale(1.0);
+  }
 }
 
-/* ── Reveal: Next-Image Loading Bar ── */
+.reveal-verdict-scale {
+  animation: revealVerdictScale 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
 
+@keyframes revealVerdictScale {
+  from {
+    opacity: 0;
+    transform: scale(1.15);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.0);
+  }
+}
+
+/* ── Next-Image Progress indicator line ── */
 .reveal-next-bar {
   width: 0%;
-  animation: revealNextFill 5.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  animation: revealNextFill 5.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
 @keyframes revealNextFill {
@@ -467,37 +478,15 @@ a {
 }
 
 .reveal-next-dots {
-  animation: revealDots 1.2s steps(3, end) infinite;
+  animation: revealDots 1.5s ease-in-out infinite;
 }
 
 @keyframes revealDots {
-  0% { opacity: 0.2; }
-  33% { opacity: 0.5; }
-  66% { opacity: 0.8; }
-  100% { opacity: 0.2; }
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
 }
 
-/* ── Reveal: Source Badge ── */
-
-.reveal-source-badge {
-  animation: revealBadgeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
-  opacity: 0;
-  transform: scale(0.9);
-}
-
-@keyframes revealBadgeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* ── Reasoning Tags ── */
-
+/* ── Reasoning Tags & Navigation Cascades ── */
 .reasoning-tags-container {
   padding: 0.5rem 0 0.25rem;
 }
@@ -508,7 +497,7 @@ a {
 }
 
 .reasoning-tag-enter {
-  animation: reasoningFadeIn 0.22s ease-out forwards;
+  animation: reasoningFadeIn 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
   opacity: 0;
 }
 
@@ -523,14 +512,13 @@ a {
   }
 }
 
-/* ── Delayed Fade-in for Cinematic Reveal Screen ── */
 .animate-reveal-sentence {
-  animation: revealFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.8s forwards;
+  animation: revealFadeIn 0.8s cubic-bezier(0.25, 1, 0.5, 1) 0.4s forwards;
   opacity: 0;
 }
 
 .animate-reveal-metadata {
-  animation: revealFadeIn 1s cubic-bezier(0.16, 1, 0.3, 1) 1.6s forwards;
+  animation: revealFadeIn 0.8s cubic-bezier(0.25, 1, 0.5, 1) 0.8s forwards;
   opacity: 0;
 }
 
@@ -545,19 +533,79 @@ a {
   }
 }
 
-/* ── Living Presence Observer Registry Drift ── */
-.living-presence-pulse {
-  animation: livingPresence 4s ease-in-out infinite alternate;
+/* ── Premium Tactile Controls ── */
+.btn-ghost {
+  border: 1px solid var(--outline);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: background-color 300ms cubic-bezier(0.25, 1, 0.5, 1), color 300ms cubic-bezier(0.25, 1, 0.5, 1), transform 150ms cubic-bezier(0.25, 1, 0.5, 1);
+  cursor: pointer;
 }
 
-@keyframes livingPresence {
-  0% {
-    opacity: 0.08;
+.btn-ghost:hover {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.btn-ghost:active {
+  transform: scale(0.97);
+}
+
+.btn-ghost:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ── Prefers Reduced Motion (Accessibility Overrides) ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-delay: -1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    background-attachment: initial !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
   }
-  50% {
-    opacity: 0.22;
+  
+  .image-breathe {
+    animation: none !important;
+    transform: scale(1) !important;
   }
-  100% {
-    opacity: 0.08;
+  
+  .reveal-blur-sharp {
+    animation: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    transform: scale(1) !important;
+  }
+  
+  .reveal-verdict-scale {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: scale(1) !important;
+  }
+  
+  .animate-reveal-sentence,
+  .animate-reveal-metadata {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+  }
+  
+  .swipe-card {
+    transition: none !important;
+  }
+  
+  .swipe-card-dragging {
+    transform: none !important;
   }
 }
+

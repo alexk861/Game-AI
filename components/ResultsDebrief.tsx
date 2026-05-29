@@ -20,6 +20,7 @@ interface ResultsDebriefProps {
   adAlreadyUnlocked?: boolean;
   reflectionLevel?: number;
   lastReflectionUnlockAt?: string | null;
+  isChallengePlay?: boolean;
 }
 
 function comparisonFor(score: number): number {
@@ -61,6 +62,7 @@ export default function ResultsDebrief({
   adAlreadyUnlocked = false,
   reflectionLevel = 0,
   lastReflectionUnlockAt = null,
+  isChallengePlay = false,
 }: ResultsDebriefProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
@@ -115,8 +117,26 @@ export default function ResultsDebrief({
   const completionLabel = completionSeconds === null
     ? 'not recorded'
     : `${Math.floor(completionSeconds / 60)}:${String(completionSeconds % 60).padStart(2, '0')}`;
-  const shareMarks = results.map(result => result.guess === 'timeout' ? '0' : result.correct ? '1' : 'x').join('');
-  const shareText = `UNCANNY\n${shareMarks} ${score}/5\naccuracy ${perceptionPercent}%\ntime ${completionLabel}\nhttps://game-ai-one.vercel.app`;
+  const formatSetDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[1]}.${parts[2]}`; // MM.DD
+    }
+    return dateStr;
+  };
+
+  const shareMarks = results
+    .map(result => {
+      if (result.guess === 'timeout') return '⬚';
+      return result.correct ? '▣' : '☒';
+    })
+    .join(' ');
+
+  const dateFormatted = formatSetDate(setDate);
+  const targetDate = setDate || new Date().toISOString().split('T')[0];
+  const message = resultReflection(score);
+  const shareText = `UNCANNY\n${dateFormatted} · ${score}/5\n\n${shareMarks}\n\n${message}\nPlay the same set:\nhttps://game-ai-one.vercel.app/?set=${targetDate}`;
 
   const handleShare = async () => {
     const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
@@ -132,7 +152,7 @@ export default function ResultsDebrief({
       await navigator.clipboard.writeText(shareText);
       const button = document.getElementById('share-btn');
       if (button) {
-        button.textContent = copy.cta.exported;
+        button.textContent = 'Copied.';
         setTimeout(() => { button.textContent = copy.cta.export; }, 1800);
       }
     }
@@ -272,7 +292,7 @@ export default function ResultsDebrief({
             {copy.cta.export}
           </button>
 
-          {onUnlockExtraPlay && !adWatched && (
+          {!isChallengePlay && onUnlockExtraPlay && !adWatched && (
             <button
               type="button"
               disabled={adPlaying}
@@ -300,7 +320,7 @@ export default function ResultsDebrief({
             </a>
           </div>
 
-          {!adAlreadyUnlocked && onRequestReflection && reflectionLevel < 3 && (
+          {!isChallengePlay && !adAlreadyUnlocked && onRequestReflection && reflectionLevel < 3 && (
             <div className="mt-4 border-t border-outline/5 pt-6 flex flex-col items-center">
               <button
                 type="button"
