@@ -29,15 +29,30 @@ const defaultState: UncannyStorage = {
   lastReflectionUnlockAt: null,
 };
 
+const encodeState = (data: string): string => {
+  if (typeof window === 'undefined') return data;
+  return window.btoa(encodeURIComponent(data));
+};
+
+const decodeState = (data: string): string => {
+  if (typeof window === 'undefined') return data;
+  try {
+    return decodeURIComponent(window.atob(data));
+  } catch {
+    return data; // Gracious fallback for pre-existing plaintext JSON states
+  }
+};
+
 export function getStorage(): UncannyStorage {
   if (typeof window === 'undefined') return defaultState;
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultState;
+    const decoded = decodeState(raw);
     return {
       ...defaultState,
-      ...JSON.parse(raw),
+      ...JSON.parse(decoded),
     } as UncannyStorage;
   } catch {
     return defaultState;
@@ -47,7 +62,8 @@ export function getStorage(): UncannyStorage {
 export function saveStorage(state: UncannyStorage): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const serialized = JSON.stringify(state);
+    localStorage.setItem(STORAGE_KEY, encodeState(serialized));
   } catch (err) {
     console.warn('[storage] Failed to save state to localStorage:', err);
   }

@@ -34,22 +34,32 @@ export async function GET(request: Request) {
 
   const targetDate = setParam || new Date().toISOString().split('T')[0];
   const supabase = getSupabase();
+  const isOffline = !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  let query = supabase
-    .from('challenges')
-    .select('id, image_url, difficulty, set_order, answer')
-    .eq('set_date', targetDate);
+  let dbData = null;
+  let error = null;
 
-  if (isReflection) {
-    query = query.in('set_order', expectedOrders);
+  if (!isOffline) {
+    let query = supabase
+      .from('challenges')
+      .select('id, image_url, difficulty, set_order, answer')
+      .eq('set_date', targetDate);
+
+    if (isReflection) {
+      query = query.in('set_order', expectedOrders);
+    } else {
+      query = query.lte('set_order', 5);
+    }
+
+    const { data, error: err } = await query.order('set_order', { ascending: true });
+    dbData = data;
+    error = err;
+
+    if (error) {
+      console.error('Daily set fetch error from database:', error);
+    }
   } else {
-    query = query.lte('set_order', 5);
-  }
-
-  const { data: dbData, error } = await query.order('set_order', { ascending: true });
-
-  if (error) {
-    console.error('Daily set fetch error from database:', error);
+    console.warn('[daily-set] Supabase client is offline. Falling back directly to local challenges.');
   }
 
   // Graceful fallback to pre-defined static challenges if DB has insufficient rows or errors
@@ -107,7 +117,7 @@ export async function GET(request: Request) {
   }
 
   // Hard Check 6: No deleted/rejected candidates (only when database queries succeed and we're not using fallback)
-  if (!usingFallback && imageUrls.length > 0) {
+  if (!usingFallback && imageUrls.length > 0 && !isOffline) {
     const { data: candidates, error: candError } = await supabase
       .from('content_candidates')
       .select('image_url, status')

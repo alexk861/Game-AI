@@ -66,6 +66,7 @@ export default function Home() {
   // Challenge Play States
   const [isChallengePlay, setIsChallengePlay] = useState(false);
   const [challengeSetParam, setChallengeSetParam] = useState<string | null>(null);
+  const [zenMode, setZenMode] = useState(false);
 
   const loadDailySet = useCallback(async (state: UncannyStorage, completed: boolean) => {
     try {
@@ -619,7 +620,7 @@ export default function Home() {
   if (phase === 'entry') {
     return (
       <>
-        <WelcomeScreen onBegin={handleBegin} />
+        <WelcomeScreen onBegin={handleBegin} zenMode={zenMode} setZenMode={setZenMode} />
         {adOverlayState !== 'none' && <CalmAdTransitionOverlay state={adOverlayState} />}
       </>
     );
@@ -724,7 +725,8 @@ export default function Home() {
         phase={phase}
         timerKey={timerKey}
         timerDuration={TIMER_DURATION}
-        timerRunning={timerRunning}
+        timerRunning={timerRunning && !zenMode}
+        zenMode={zenMode}
         elapsedMs={elapsedMs}
         currentIndex={currentIndex}
         total={isReflectionPlay ? (getStorage().reflectionLevel === 3 ? 1 : getStorage().reflectionLevel === 2 ? 2 : 3) : TOTAL_DAILY_CHALLENGES}

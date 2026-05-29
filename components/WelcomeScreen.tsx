@@ -5,9 +5,11 @@ import TopNav from '@/components/TopNav';
 
 interface WelcomeScreenProps {
   onBegin: () => void;
+  zenMode: boolean;
+  setZenMode: (val: boolean) => void;
 }
 
-export default function WelcomeScreen({ onBegin }: WelcomeScreenProps) {
+export default function WelcomeScreen({ onBegin, zenMode, setZenMode }: WelcomeScreenProps) {
   return (
     <main className="min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-background text-foreground scroll-smooth relative">
       <div className="noise-overlay" />
@@ -42,6 +44,20 @@ export default function WelcomeScreen({ onBegin }: WelcomeScreenProps) {
           >
             {copy.onboarding.cta}
           </button>
+
+          <div className="mt-4 flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => setZenMode(!zenMode)}
+              className={`w-full font-mono text-[10px] uppercase tracking-[0.16em] py-3 px-4 border transition-all duration-150 rounded-[3px] cursor-pointer active:scale-[0.985] ${
+                zenMode
+                  ? 'border-accent-amber text-accent-amber bg-accent-amber/5'
+                  : 'border-outline/25 text-muted/50 hover:text-muted/80'
+              }`}
+            >
+              {zenMode ? 'Zen Mode: Enabled (No Timer)' : 'Zen Mode: Disabled (12s Timer)'}
+            </button>
+          </div>
         </div>
 
         {/* Below-the-fold Editorial Content Section for AdSense Value Compliance */}

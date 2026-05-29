@@ -16,6 +16,7 @@ interface GameShellProps {
   timerKey: number;
   timerDuration: number;
   timerRunning: boolean;
+  zenMode?: boolean;
   elapsedMs: number;
   currentIndex: number;
   total: number;
@@ -35,6 +36,7 @@ export default function GameShell({
   timerKey,
   timerDuration,
   timerRunning,
+  zenMode = false,
   elapsedMs,
   currentIndex,
   total,
@@ -47,7 +49,7 @@ export default function GameShell({
   onTagSelected,
 }: GameShellProps) {
   const disabled = phase !== 'playing' && phase !== 'investigating';
-  const isCommitting = !timerRunning && (phase === 'playing' || phase === 'investigating');
+  const isCommitting = !timerRunning && (phase === 'playing' || phase === 'investigating') && !zenMode;
   const elapsedSeconds = Math.floor(elapsedMs / 1000);
   const elapsedLabel = `${Math.floor(elapsedSeconds / 60)}:${String(elapsedSeconds % 60).padStart(2, '0')}`;
 
@@ -69,7 +71,11 @@ export default function GameShell({
       {/* ── Floating: Top Navigation Overlay ── */}
       <div className="absolute top-0 inset-x-0 z-30 pointer-events-none flex flex-col pt-[env(safe-area-inset-top)]">
         <div className="pointer-events-auto">
-          <Timer key={timerKey} duration={timerDuration} running={timerRunning} onExpire={onTimerExpire} />
+          {!zenMode ? (
+            <Timer key={timerKey} duration={timerDuration} running={timerRunning} onExpire={onTimerExpire} />
+          ) : (
+            <div className="h-1 bg-outline/5 w-full" />
+          )}
         </div>
         <div className="flex items-center justify-between px-4 pb-12 pt-2">
           <div className="font-sans text-[10px] font-light uppercase tracking-[0.24em] text-muted/60">

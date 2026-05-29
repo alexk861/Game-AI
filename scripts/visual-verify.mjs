@@ -62,6 +62,16 @@ ws.addEventListener('message', event => {
     if (payload.error) reject(new Error(payload.error.message));
     else resolve(payload.result);
   }
+
+  if (payload.method === 'Runtime.consoleAPICalled') {
+    const args = payload.params.args.map(a => a.value || a.description).join(' ');
+    console.log(`[browser console] [${payload.params.type}] ${args}`);
+  }
+
+  if (payload.method === 'Runtime.exceptionThrown') {
+    const details = payload.params.exceptionDetails;
+    console.log(`[browser exception] ${details.text} ${details.exception?.description || ''}`);
+  }
 });
 
 function send(method, params = {}) {
@@ -261,12 +271,18 @@ try {
   await delay(400);
 
   await holdImage();
-  await waitFor('document.body.innerText.includes("EXIF") || document.body.innerText.includes("compression anomaly")');
+  await waitFor(`
+    (() => {
+      const card = document.querySelector('.swipe-card');
+      const img = document.querySelector('.swipe-card img');
+      return Boolean(card && card.style.cursor === 'crosshair' && img && img.style.transform === 'scale(1.7)');
+    })()
+  `);
   await screenshot('03-investigation-390x844.png');
   await releaseImage();
 
   await clickButtonContaining('AI');
-  await waitFor('document.body.innerText.includes("This image was")');
+  await waitFor('document.body.innerText.includes("SYNTHETIC REPRESENTATION") || document.body.innerText.includes("ORGANIC CAPTURE")');
   await screenshot('04-reveal-390x844.png');
 
   for (let i = 0; i < 4; i += 1) {
@@ -274,13 +290,22 @@ try {
     await waitForHeroImage();
     await assertHeroImage();
     await clickButtonContaining(i % 2 === 0 ? 'Real' : 'AI');
-    await waitFor('document.body.innerText.includes("This image was")', 15000);
+    await waitFor('document.body.innerText.includes("SYNTHETIC REPRESENTATION") || document.body.innerText.includes("ORGANIC CAPTURE")', 15000);
   }
 
   // ── Assertions 3: LocalStorage Persistence ──
   console.log("Asserting guess persistence in localStorage...");
-  const stateStr = await evaluate(`localStorage.getItem("uncanny_state")`);
-  const state = JSON.parse(stateStr);
+  const state = await evaluate(`
+    (() => {
+      const raw = localStorage.getItem("uncanny_state");
+      if (!raw) return null;
+      try {
+        return JSON.parse(decodeURIComponent(window.atob(raw)));
+      } catch {
+        return JSON.parse(raw);
+      }
+    })()
+  `);
   if (!state) {
     throw new Error("AssertFailed: uncanny_state is missing from localStorage");
   }
@@ -289,13 +314,23 @@ try {
   }
   console.log("Guess persistence assertions passed successfully!");
 
-  await waitFor('document.body.innerText.toLowerCase().includes("results") && document.body.innerText.includes("Share results")', 16000);
+  await waitFor('document.body.innerText.toLowerCase().includes("results") && document.body.innerText.toLowerCase().includes("share results")', 16000);
   await screenshot('05-results-390x844.png');
   await navigateFresh();
   await waitFor('document.body.innerText.toLowerCase().includes("all images reviewed") || document.body.innerText.toLowerCase().includes("today\'s results")', 16000);
   await screenshot('07-reload-completed-390x844.png');
 
   console.log(`Saved screenshots to ${outputDir}`);
+} catch (err) {
+  console.error("Test error occurred:", err);
+  try {
+    const shot = await send('Page.captureScreenshot', { format: 'png' });
+    await writeFile(join(outputDir, 'error-timeout.png'), Buffer.from(shot.data, 'base64'));
+    console.log("Saved error-timeout.png screenshot!");
+  } catch (screenshotErr) {
+    console.error("Failed to capture error screenshot:", screenshotErr);
+  }
+  throw err;
 } finally {
   ws.close();
   chrome.kill();

@@ -59,8 +59,8 @@ export default function SwipeCard({
     const rect = cardRef.current.getBoundingClientRect();
     const x = ((clientX - rect.left) / rect.width) * 100;
     const y = ((clientY - rect.top) / rect.height) * 100;
-    const clampedX = Math.max(0, Math.min(100, x));
-    const clampedY = Math.max(0, Math.min(100, y));
+    const clampedX = Math.max(5, Math.min(95, x));
+    const clampedY = Math.max(5, Math.min(95, y));
     setTransformOrigin(`${clampedX}% ${clampedY}%`);
   }, []);
 
@@ -126,8 +126,12 @@ export default function SwipeCard({
     }
   }, [dragState.isDragging, dragState.startX, disabled, isInvestigating, clearInvestigateTimer, updateTransformOrigin]);
 
-  const handlePointerUp = useCallback(() => {
+  const handlePointerUp = useCallback((event: React.PointerEvent) => {
     if (!dragState.isDragging || disabled) return;
+
+    try {
+      (event.currentTarget as HTMLElement).releasePointerCapture(event.pointerId);
+    } catch {}
 
     clearInvestigateTimer();
     setInvestigating(false);
@@ -150,7 +154,10 @@ export default function SwipeCard({
     setDragState({ isDragging: false, startX: 0, delta: 0 });
   }, [dragState, disabled, onSwipe, clearInvestigateTimer, setInvestigating]);
 
-  const handlePointerCancel = useCallback(() => {
+  const handlePointerCancel = useCallback((event: React.PointerEvent) => {
+    try {
+      (event.currentTarget as HTMLElement).releasePointerCapture(event.pointerId);
+    } catch {}
     clearInvestigateTimer();
     setInvestigating(false);
     wasInvestigatingRef.current = false;

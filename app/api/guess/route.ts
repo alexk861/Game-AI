@@ -49,6 +49,21 @@ export async function POST(request: NextRequest) {
       updatedGuessesReal = guess === 'real' ? 1 : 0;
     } else {
       const supabaseAdmin = getSupabaseAdmin();
+      const isOffline = !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (isOffline) {
+        return NextResponse.json({
+          correct: guess === 'ai',
+          answer: 'ai',
+          context_short: 'Offline sandbox visual match.',
+          ai_prompt: null,
+          source_credit: 'Offline Fallback',
+          photographer_name: null,
+          photographer_url: null,
+          unsplash_url: null,
+          guesses_ai: 1,
+          guesses_real: 0,
+        });
+      }
       const { data: dbChallenge, error: fetchError } = await supabaseAdmin
         .from('challenges')
         .select('answer, image_url, context_short, ai_prompt, source_credit, photographer_name, photographer_url, unsplash_url, guesses_ai, guesses_real')

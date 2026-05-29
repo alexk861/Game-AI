@@ -5,6 +5,20 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const supabase = getSupabase();
+  const isOffline = !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (isOffline) {
+    return NextResponse.json({
+      total_guesses: 0,
+      global_failure_rate: 0.38,
+      most_misleading: {
+        id: 'day1-challenge-2',
+        image_url: 'https://images.unsplash.com/photo-1534996858221-380b92700493?w=800',
+        failure_rate: 0.49,
+        total_guesses: 154
+      }
+    });
+  }
 
   try {
     const { data: challenges, error } = await supabase

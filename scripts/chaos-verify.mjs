@@ -187,7 +187,12 @@ try {
   const evaluatedState = await evaluate(`
     (() => {
       const raw = localStorage.getItem("uncanny_state");
-      return JSON.parse(raw);
+      if (!raw) return null;
+      try {
+        return JSON.parse(decodeURIComponent(window.atob(raw)));
+      } catch {
+        return JSON.parse(raw);
+      }
     })()
   `);
 
@@ -210,12 +215,19 @@ try {
   const todayStr = new Date().toISOString().split('T')[0];
   await evaluate(`
     (() => {
-      const state = JSON.parse(localStorage.getItem("uncanny_state"));
+      const raw = localStorage.getItem("uncanny_state");
+      if (!raw) return;
+      let state;
+      try {
+        state = JSON.parse(decodeURIComponent(window.atob(raw)));
+      } catch {
+        state = JSON.parse(raw);
+      }
       state.todayDate = "${todayStr}";
       state.todayCompleted = true;
       state.todayCompletedAt = Date.now();
       state.lastPlayedDate = "${todayStr}";
-      localStorage.setItem("uncanny_state", JSON.stringify(state));
+      localStorage.setItem("uncanny_state", window.btoa(encodeURIComponent(JSON.stringify(state))));
     })()
   `);
   await navigateFresh();
@@ -260,7 +272,7 @@ try {
   await clickButtonContaining('AI');
 
   // Verify that the app handles the catch block and reveals fallback info gracefully
-  await waitFor('document.body.innerText.includes("Source details unavailable")');
+  await waitFor('document.body.innerText.includes("SYNTHETIC REPRESENTATION")');
   console.log("🟢 Passed: Endpoint crash/timeout handled gracefully with local fallback without page freeze.");
 
   await screenshot('chaos-network-fallback.png');

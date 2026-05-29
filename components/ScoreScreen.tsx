@@ -68,13 +68,13 @@ export default function ScoreScreen({ results, streak, setDate }: ScoreScreenPro
       <div className="noise-overlay opacity-[0.08]" />
 
       <div className="archive-panel p-8 flex flex-col items-center w-full max-w-sm">
-        <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted/60 mb-7 fade-in">
+        <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted/75 mb-7 fade-in">
           {copy.results.label}
         </div>
 
         <div className="score-reveal">
           <div className="text-6xl font-normal font-mono tracking-normal">
-            {score}<span className="text-2xl text-muted/60">/5</span>
+            {score}<span className="text-2xl text-muted/75">/5</span>
           </div>
         </div>
 
@@ -88,7 +88,7 @@ export default function ScoreScreen({ results, streak, setDate }: ScoreScreenPro
               key={i}
               className={`w-10 h-10 flex items-center justify-center text-xs font-mono border ${
                 r.guess === 'timeout'
-                  ? 'border-outline-variant bg-surface-container text-muted/50'
+                  ? 'border-outline-variant bg-surface-container text-muted/65'
                   : r.correct
                     ? 'border-outline text-muted bg-surface'
                     : 'border-ai text-ai bg-ai/10'
@@ -100,7 +100,7 @@ export default function ScoreScreen({ results, streak, setDate }: ScoreScreenPro
         </div>
 
         {streak > 0 && (
-          <div className="mt-6 text-[10px] font-mono text-muted/55 uppercase tracking-[0.16em] fade-in" style={{ animationDelay: '0.7s' }}>
+          <div className="mt-6 text-[10px] font-mono text-muted/75 uppercase tracking-[0.16em] fade-in" style={{ animationDelay: '0.7s' }}>
             {copy.results.recurrence(streak)}
           </div>
         )}
@@ -122,7 +122,7 @@ export default function ScoreScreen({ results, streak, setDate }: ScoreScreenPro
         </div>
       </div>
 
-      <div className="absolute bottom-6 text-[10px] text-muted/40 font-mono uppercase tracking-[0.15em] fade-in" style={{ animationDelay: '1.1s' }}>
+      <div className="absolute bottom-6 text-[10px] text-muted/65 font-mono uppercase tracking-[0.15em] fade-in" style={{ animationDelay: '1.1s' }}>
         {setDate} / uncanny.app
       </div>
     </div>

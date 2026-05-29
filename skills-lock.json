@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "react19-test-patterns": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/react19-test-patterns/SKILL.md",
+      "computedHash": "16d1d800fcf2b0d06d1bc745252afcaec946a4a347354148c743d8200f964d1a"
+    }
+  }
+}

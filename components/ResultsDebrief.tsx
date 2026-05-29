@@ -161,13 +161,13 @@ export default function ResultsDebrief({
   return (
     <main className="h-[100dvh] overflow-x-hidden overflow-y-auto bg-background text-foreground">
       <section className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-3xl flex-col px-8 pb-[calc(env(safe-area-inset-bottom)+2rem)] pt-[calc(env(safe-area-inset-top)+1.5rem)] sm:px-6 lg:px-8">
-        <div className="flex min-w-0 items-center justify-between gap-4 font-sans text-[9px] font-light uppercase tracking-[0.18em] text-muted/45">
+        <div className="flex min-w-0 items-center justify-between gap-4 font-sans text-[9px] font-light uppercase tracking-[0.18em] text-muted/65">
           <span>{copy.results.label}</span>
           <span className="shrink-0">{setDate}</span>
         </div>
 
         <div className="mt-9 md:mt-10">
-          <div className="font-sans text-[9px] font-light uppercase tracking-[0.18em] text-muted/45 mb-4">
+          <div className="font-sans text-[9px] font-light uppercase tracking-[0.18em] text-muted/65 mb-4">
             {copy.results.metric}
           </div>
           <div className="mt-2 flex flex-col gap-4 py-1">
@@ -175,10 +175,10 @@ export default function ResultsDebrief({
               &quot;{resultReflection(score)}&quot;
             </p>
             <div className="flex items-center gap-3">
-              <span className="font-sans text-[10px] font-light uppercase text-muted/40 tracking-wider">Confidence Index:</span>
+              <span className="font-sans text-[10px] font-light uppercase text-muted/60 tracking-wider">Confidence Index:</span>
               <div className="flex items-end gap-0.5">
                 <span className="text-xl font-sans text-foreground leading-none font-light">{perceptionPercent}</span>
-                <span className="pb-0.5 text-[9px] font-sans text-muted/40">%</span>
+                <span className="pb-0.5 text-[9px] font-sans text-muted/60">%</span>
               </div>
             </div>
           </div>
@@ -194,7 +194,7 @@ export default function ResultsDebrief({
         {/* ── Misleading Image block (Borderless and integrated) ── */}
         {misleadingChallenge && (
           <div className="mt-10">
-            <div className="font-sans text-[9px] font-light uppercase tracking-[0.18em] text-muted/45 mb-3.5">
+            <div className="font-sans text-[9px] font-light uppercase tracking-[0.18em] text-muted/65 mb-3.5">
               {copy.results.misleading}
             </div>
             <div className="grid gap-5 sm:grid-cols-[6rem_1fr] items-center">
@@ -217,7 +217,7 @@ export default function ResultsDebrief({
 
         {/* ── Selection index button row ── */}
         <div className="mt-10">
-          <div className="font-sans text-[9px] font-light uppercase tracking-[0.18em] text-muted/45 mb-4">
+          <div className="font-sans text-[9px] font-light uppercase tracking-[0.18em] text-muted/65 mb-4">
             {copy.results.marks}
           </div>
           <div className="grid grid-cols-5 gap-2">
@@ -271,7 +271,7 @@ export default function ResultsDebrief({
                 />
               </div>
               <div className="py-1">
-                <div className="font-sans text-[9px] font-light uppercase tracking-[0.18em] text-muted/45">
+                <div className="font-sans text-[9px] font-light uppercase tracking-[0.18em] text-muted/65">
                   {copy.results.selectedFrame(selectedIndex)}
                 </div>
                 <p className="mt-3.5 text-sm font-sans font-light leading-relaxed text-muted max-w-sm">
@@ -334,7 +334,7 @@ export default function ResultsDebrief({
               >
                 {cooldownRemaining > 0 ? 'Allow the archive to stabilize.' : reflectionLevel === 1 ? 'Continue Observation' : reflectionLevel === 2 ? 'One final unstable record remains.' : 'Request Reflection'}
               </button>
-              <p className="text-[9px] font-sans font-light tracking-wide text-muted/30 mt-3 text-center">
+              <p className="text-[9px] font-sans font-light tracking-wide text-muted/55 mt-3 text-center">
                 {cooldownRemaining > 0
                   ? `Neural pathways stabilizing... (${cooldownRemaining}s remaining)`
                   : reflectionLevel === 1
