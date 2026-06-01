@@ -65,6 +65,8 @@ interface ContentCandidate {
   slow_burn_score?: number | null;
   curator_locked?: boolean | null;
   anomaly_tier?: number | null;
+  parent_real_candidate_id?: string | null;
+  total_served_count?: number | null;
 }
 
 interface ScheduleGap {
@@ -272,6 +274,22 @@ async function selectEligibleCandidates(
       continue;
     }
 
+    // Label source mismatch guardrail (Real must not be AI URL, AI must not be Unsplash URL)
+    const isUnsplashUrl = candidate.image_url && (candidate.image_url.includes('images.unsplash.com') || candidate.image_url.includes('unsplash.com'));
+    const isAiUrl = candidate.image_url && (candidate.image_url.includes('/ai-generated/') || candidate.image_url.includes('/challenge-images/ai-generated/'));
+    
+    if (isReal && isAiUrl) {
+      console.warn(`[auto-fill] rejected_label_source_mismatch: Candidate ID ${candidate.id} (${candidate.source_type || 'unknown'}) is labeled as 'real' but uses an AI URL.`);
+      skippedLowScore++;
+      continue;
+    }
+    
+    if (isAi && isUnsplashUrl) {
+      console.warn(`[auto-fill] rejected_label_source_mismatch: Candidate ID ${candidate.id} (${candidate.source_type || 'unknown'}) is labeled as 'ai' but uses an Unsplash URL.`);
+      skippedLowScore++;
+      continue;
+    }
+
     if (candidate.status === 'deleted' || candidate.status === 'rejected') {
       skippedLowScore++;
       continue;
@@ -473,35 +491,43 @@ async function scheduleCandidates(
 
   // Evolve Paced Tension Difficulty Pools
   // Easy: high consensus (or suggestion <= 2)
-  const realEasy = realCandidates.filter(c => (c.consensus_confidence !== undefined && c.consensus_confidence !== null ? c.consensus_confidence >= 0.70 : (c.difficulty_suggestion || 3) <= 2))
-    .sort((a, b) => (b.consensus_confidence || 0) - (a.consensus_confidence || 0));
+  const realEasy = realCandidates.filter(c => {
+    const useStats = c.total_served_count && c.total_served_count > 0;
+    return (useStats && c.consensus_confidence !== undefined && c.consensus_confidence !== null ? c.consensus_confidence >= 0.70 : (c.difficulty_suggestion || 3) <= 2);
+  }).sort((a, b) => (b.consensus_confidence || 0) - (a.consensus_confidence || 0));
 
   // Medium: moderate disagreement (or suggestion = 3)
   const realMedium = realCandidates.filter(c => {
+    const useStats = c.total_served_count && c.total_served_count > 0;
     const dis = c.disagreement_score;
-    return (dis !== undefined && dis !== null ? (dis >= 0.30 && dis <= 0.70) : (c.difficulty_suggestion || 3) === 3);
+    return (useStats && dis !== undefined && dis !== null ? (dis >= 0.30 && dis <= 0.70) : (c.difficulty_suggestion || 3) === 3);
   }).sort((a, b) => (b.disagreement_score || 0) - (a.disagreement_score || 0));
 
   // Hard: high disagreement (or suggestion >= 4)
   const realHard = realCandidates.filter(c => {
+    const useStats = c.total_served_count && c.total_served_count > 0;
     const dis = c.disagreement_score;
-    return (dis !== undefined && dis !== null ? dis > 0.70 : (c.difficulty_suggestion || 3) >= 4);
+    return (useStats && dis !== undefined && dis !== null ? dis > 0.70 : (c.difficulty_suggestion || 3) >= 4);
   }).sort((a, b) => (b.disagreement_score || 0) - (a.disagreement_score || 0));
 
   // AI Easy
-  const aiEasy = aiCandidates.filter(c => (c.consensus_confidence !== undefined && c.consensus_confidence !== null ? c.consensus_confidence >= 0.70 : (c.difficulty_suggestion || 3) <= 2))
-    .sort((a, b) => (b.consensus_confidence || 0) - (a.consensus_confidence || 0));
+  const aiEasy = aiCandidates.filter(c => {
+    const useStats = c.total_served_count && c.total_served_count > 0;
+    return (useStats && c.consensus_confidence !== undefined && c.consensus_confidence !== null ? c.consensus_confidence >= 0.70 : (c.difficulty_suggestion || 3) <= 2);
+  }).sort((a, b) => (b.consensus_confidence || 0) - (a.consensus_confidence || 0));
 
   // AI Medium
   const aiMedium = aiCandidates.filter(c => {
+    const useStats = c.total_served_count && c.total_served_count > 0;
     const dis = c.disagreement_score;
-    return (dis !== undefined && dis !== null ? (dis >= 0.30 && dis <= 0.70) : (c.difficulty_suggestion || 3) === 3);
+    return (useStats && dis !== undefined && dis !== null ? (dis >= 0.30 && dis <= 0.70) : (c.difficulty_suggestion || 3) === 3);
   }).sort((a, b) => (b.disagreement_score || 0) - (a.disagreement_score || 0));
 
   // AI Hard
   const aiHard = aiCandidates.filter(c => {
+    const useStats = c.total_served_count && c.total_served_count > 0;
     const dis = c.disagreement_score;
-    return (dis !== undefined && dis !== null ? dis > 0.70 : (c.difficulty_suggestion || 3) >= 4);
+    return (useStats && dis !== undefined && dis !== null ? dis > 0.70 : (c.difficulty_suggestion || 3) >= 4);
   }).sort((a, b) => (b.disagreement_score || 0) - (a.disagreement_score || 0));
 
   // Track used candidate IDs to avoid double-assignment
@@ -515,11 +541,104 @@ async function scheduleCandidates(
     scene: Set<string>;
   }>();
 
+  // Load all scheduled challenges to compute 14-day repetition cooldowns
+  const scheduledDetailsList: Array<{
+    date: string;
+    imageUrl: string;
+    parentId?: string;
+    promptFingerprint?: string;
+  }> = [];
+
+  try {
+    const { data: allScheduled, error: schedError } = await supabase
+      .from('challenges')
+      .select('set_date, image_url, ai_prompt')
+      .not('image_url', 'is', null);
+
+    if (!schedError && allScheduled && allScheduled.length > 0) {
+      const urls = allScheduled.map(s => s.image_url);
+      const { data: matchedCandidates } = await supabase
+        .from('content_candidates')
+        .select('image_url, parent_real_candidate_id, prompt_used')
+        .in('image_url', urls);
+
+      const matchMap = new Map<string, { parentId?: string; promptFingerprint?: string }>();
+      if (matchedCandidates) {
+        matchedCandidates.forEach(c => {
+          matchMap.set(c.image_url, {
+            parentId: c.parent_real_candidate_id || undefined,
+            promptFingerprint: c.prompt_used ? normalizePrompt(c.prompt_used) : undefined
+          });
+        });
+      }
+
+      allScheduled.forEach(s => {
+        const match = matchMap.get(s.image_url);
+        scheduledDetailsList.push({
+          date: s.set_date,
+          imageUrl: s.image_url,
+          parentId: match?.parentId,
+          promptFingerprint: match?.promptFingerprint || (s.ai_prompt ? normalizePrompt(s.ai_prompt) : undefined)
+        });
+      });
+    }
+  } catch (err) {
+    console.error('[auto-fill] Failed to load scheduled challenges list for cooldown checks:', err);
+  }
+
+  function getDaysDiff(d1Str: string, d2Str: string): number {
+    try {
+      const t1 = new Date(d1Str).getTime();
+      const t2 = new Date(d2Str).getTime();
+      return Math.round((t2 - t1) / (24 * 60 * 60 * 1000));
+    } catch {
+      return 999;
+    }
+  }
+
+  function checkCooldownConflict(
+    c: ContentCandidate,
+    gapDate: string,
+    cooldownDays: number,
+    skipLogs: string[]
+  ): boolean {
+    if (cooldownDays <= 0) return false;
+
+    const candidatePromptFingerprint = c.prompt_used ? normalizePrompt(c.prompt_used) : '';
+
+    for (const s of scheduledDetailsList) {
+      const diff = getDaysDiff(s.date, gapDate);
+      if (diff >= 1 && diff <= cooldownDays) {
+        // Conflict A: image_url
+        if (c.image_url && s.imageUrl === c.image_url) {
+          skipLogs.push(`skipped_duplicate_image_url (imageUrl: ${c.image_url} seen ${diff} days ago on ${s.date})`);
+          skipLogs.push(`skipped_recently_seen_official`);
+          return true;
+        }
+        // Conflict B: parent_real_candidate_id
+        if (c.parent_real_candidate_id && s.parentId === c.parent_real_candidate_id) {
+          skipLogs.push(`skipped_duplicate_parent (parentId: ${c.parent_real_candidate_id} seen ${diff} days ago on ${s.date})`);
+          skipLogs.push(`skipped_recently_seen_official`);
+          return true;
+        }
+        // Conflict C: prompt fingerprint
+        if (candidatePromptFingerprint && s.promptFingerprint === candidatePromptFingerprint) {
+          skipLogs.push(`skipped_duplicate_prompt (prompt fingerprint seen ${diff} days ago on ${s.date})`);
+          skipLogs.push(`skipped_recently_seen_official`);
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   function pickCandidate(
     preferredSource: 'real' | 'ai',
     targetDifficulty: number,
     dayDate: string,
-    slotNumber: number
+    slotNumber: number,
+    cooldownDays: number,
+    skipLogs: string[]
   ): ContentCandidate | null {
     const dayCategories = usedCategoriesPerDay.get(dayDate) || [];
     const dayFingerprints = usedFingerprintsPerDay.get(dayDate) || {
@@ -533,8 +652,10 @@ async function scheduleCandidates(
       const anomalies = aiCandidates
         .filter(c => (c.anomaly_tier || 0) >= 2 && !usedIds.has(c.id))
         .sort((a, b) => (b.anomaly_tier || 0) - (a.anomaly_tier || 0));
-      if (anomalies.length > 0) {
-        return anomalies[0];
+      for (const c of anomalies) {
+        if (!checkCooldownConflict(c, dayDate, cooldownDays, skipLogs)) {
+          return c;
+        }
       }
     }
 
@@ -565,6 +686,8 @@ async function scheduleCandidates(
         if (c.lighting_fingerprint && dayFingerprints.lighting.has(c.lighting_fingerprint)) continue;
         if (c.scene_fingerprint && dayFingerprints.scene.has(c.scene_fingerprint)) continue;
 
+        if (checkCooldownConflict(c, dayDate, cooldownDays, skipLogs)) continue;
+
         return c;
       }
     }
@@ -576,6 +699,9 @@ async function scheduleCandidates(
         if (c.composition_fingerprint && dayFingerprints.composition.has(c.composition_fingerprint)) continue;
         if (c.lighting_fingerprint && dayFingerprints.lighting.has(c.lighting_fingerprint)) continue;
         if (c.scene_fingerprint && dayFingerprints.scene.has(c.scene_fingerprint)) continue;
+
+        if (checkCooldownConflict(c, dayDate, cooldownDays, skipLogs)) continue;
+
         return c;
       }
     }
@@ -583,7 +709,9 @@ async function scheduleCandidates(
     // 3rd pass: Preferred pools without restrictions
     for (const pool of preferredPools) {
       for (const c of pool) {
-        if (!usedIds.has(c.id)) return c;
+        if (usedIds.has(c.id)) continue;
+        if (checkCooldownConflict(c, dayDate, cooldownDays, skipLogs)) continue;
+        return c;
       }
     }
 
@@ -596,6 +724,9 @@ async function scheduleCandidates(
         if (c.composition_fingerprint && dayFingerprints.composition.has(c.composition_fingerprint)) continue;
         if (c.lighting_fingerprint && dayFingerprints.lighting.has(c.lighting_fingerprint)) continue;
         if (c.scene_fingerprint && dayFingerprints.scene.has(c.scene_fingerprint)) continue;
+
+        if (checkCooldownConflict(c, dayDate, cooldownDays, skipLogs)) continue;
+
         return c;
       }
     }
@@ -603,7 +734,9 @@ async function scheduleCandidates(
     // 5th pass: Fallback pools without restrictions
     for (const pool of fallbackPools) {
       for (const c of pool) {
-        if (!usedIds.has(c.id)) return c;
+        if (usedIds.has(c.id)) continue;
+        if (checkCooldownConflict(c, dayDate, cooldownDays, skipLogs)) continue;
+        return c;
       }
     }
 
@@ -644,11 +777,28 @@ async function scheduleCandidates(
       // Slots 6-11: Prefer AI.
       const preferredSource = (slot >= 1 && slot <= 3) ? 'real' : 'ai';
       
-      const picked = pickCandidate(preferredSource, targetDifficulty, gap.date, slot);
+      let picked = null;
+      let appliedCooldown = 14;
+      const skipLogs: string[] = [];
+
+      for (const cooldownVal of [14, 7, 3, 0]) {
+        picked = pickCandidate(preferredSource, targetDifficulty, gap.date, slot, cooldownVal, skipLogs);
+        if (picked) {
+          appliedCooldown = cooldownVal;
+          break;
+        }
+      }
 
       if (!picked) {
         details.push(`[scheduling-failure] Slot ${slot} on ${gap.date} remained unfilled: preferred and fallback candidate pools exhausted.`);
         continue;
+      }
+
+      if (appliedCooldown < 14) {
+        details.push(`[cooldown_relaxed] cooldown_relaxed_reason: candidate pool too small to satisfy 14-day cooldown for slot ${slot} on ${gap.date}. cooldown_days_applied: ${appliedCooldown}. skipped_recently_seen_official details: ${skipLogs.join(' | ')}`);
+        if (appliedCooldown === 0) {
+          details.push(`[repeated_as_last_resort] repeated_as_last_resort: Candidate ID ${picked.id} URL ${picked.image_url} repeated as a last resort.`);
+        }
       }
 
       const contextShort = picked.suggested_context

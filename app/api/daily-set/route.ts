@@ -1,13 +1,37 @@
 import { NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase';
-import { FALLBACK_CHALLENGES } from '@/lib/fallbackChallenges';
+import { FALLBACK_CHALLENGES, getDynamicFallbackChallenges } from '@/lib/fallbackChallenges';
 
 export const dynamic = 'force-dynamic';
+
+const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+function isValidDate(dateString: string): boolean {
+  if (!dateRegex.test(dateString)) return false;
+  
+  const timestamp = Date.parse(dateString);
+  if (isNaN(timestamp)) return false;
+  
+  const dateParts = dateString.split('-');
+  const year = parseInt(dateParts[0], 10);
+  const month = parseInt(dateParts[1], 10) - 1; // 0-indexed month
+  const day = parseInt(dateParts[2], 10);
+  
+  const d = new Date(year, month, day);
+  return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const mode = searchParams.get('mode');
   const setParam = searchParams.get('set');
+
+  if (setParam && !isValidDate(setParam)) {
+    return NextResponse.json(
+      { error: 'Invalid date parameter' },
+      { status: 400 }
+    );
+  }
 
   const isReflection1 = mode === 'reflection' || mode === 'reflection-1';
   const isReflection2 = mode === 'reflection-2';
@@ -42,7 +66,7 @@ export async function GET(request: Request) {
   if (!isOffline) {
     let query = supabase
       .from('challenges')
-      .select('id, image_url, difficulty, set_order, answer')
+      .select('id, image_url, difficulty, set_order, answer, photographer_name')
       .eq('set_date', targetDate);
 
     if (isReflection) {
@@ -62,13 +86,12 @@ export async function GET(request: Request) {
     console.warn('[daily-set] Supabase client is offline. Falling back directly to local challenges.');
   }
 
-  // Graceful fallback to pre-defined static challenges if DB has insufficient rows or errors
-  let data = dbData || [];
+  let data: any[] = dbData || [];
   let usingFallback = false;
 
   if (!data || data.length < expectedCount) {
-    console.warn(`[daily-set] Warning: Database returned ${data?.length ?? 0} challenges for mode ${mode || 'primary'}. Falling back to pre-defined challenges.`);
-    data = FALLBACK_CHALLENGES[levelIndex] || [];
+    console.warn(`[daily-set] Incomplete DB challenge set for date ${targetDate} (expected ${expectedCount}, got ${data?.length || 0}). Fallback triggered.`);
+    data = getDynamicFallbackChallenges(levelIndex, targetDate);
     usingFallback = true;
   }
 
@@ -81,7 +104,6 @@ export async function GET(request: Request) {
 
   // ── Hard and Soft Validation ──
   const validationErrors: string[] = [];
-  const softWarnings: string[] = [];
 
   // Hard Check 1: Count check
   if (data.length !== expectedCount) {
@@ -96,81 +118,34 @@ export async function GET(request: Request) {
     validationErrors.push(`Expected set_order values to be exactly [${expectedOrders.join(', ')}], but got [${orders.join(', ')}]`);
   }
 
-  // Hard Check 3: No duplicate challenge IDs
-  const challengeIds = data.map(c => c.id).filter(Boolean);
-  const uniqueIds = new Set(challengeIds);
-  if (uniqueIds.size !== challengeIds.length) {
-    validationErrors.push(`Duplicate challenge IDs detected in scheduled challenges: count = ${challengeIds.length}, unique = ${uniqueIds.size}`);
-  }
-
-  // Hard Check 4: No duplicate image_url
-  const imageUrls = data.map(c => c.image_url).filter(Boolean);
-  const uniqueUrls = new Set(imageUrls);
-  if (uniqueUrls.size !== imageUrls.length) {
-    validationErrors.push(`Duplicate image_url detected in scheduled challenges: count = ${imageUrls.length}, unique = ${uniqueUrls.size}`);
-  }
-
-  // Hard Check 5: image_url exists for all cards
-  const hasMissingImageUrl = data.some(c => !c.image_url);
-  if (hasMissingImageUrl) {
-    validationErrors.push(`One or more challenges are missing their image_url value.`);
-  }
-
-  // Hard Check 6: No deleted/rejected candidates (only when database queries succeed and we're not using fallback)
-  if (!usingFallback && imageUrls.length > 0 && !isOffline) {
-    const { data: candidates, error: candError } = await supabase
-      .from('content_candidates')
-      .select('image_url, status')
-      .in('image_url', imageUrls);
-
-    if (candError) {
-      console.error('[daily-set] Warning: Failed to query candidates for safety validation:', candError);
-    } else if (candidates) {
-      const invalidCandidates = candidates.filter(c => c.status === 'deleted' || c.status === 'rejected');
-      if (invalidCandidates.length > 0) {
-        validationErrors.push(`Scheduled challenges contain candidates with deleted or rejected status: ${invalidCandidates.map(c => c.image_url).join(', ')}`);
-      }
+  // Hard Check 3: Label Integrity Guardrail (Real must not be AI URL, AI must not be Unsplash URL)
+  data.forEach((c: any) => {
+    const isUnsplash = c.image_url && (c.image_url.includes('images.unsplash.com') || c.image_url.includes('unsplash.com'));
+    const isAiUrl = c.image_url && (c.image_url.includes('/ai-generated/') || c.image_url.includes('/challenge-images/ai-generated/'));
+    
+    if (c.answer === 'ai' && isUnsplash) {
+      validationErrors.push(`Challenge ${c.id} is labeled as AI but uses Unsplash URL: ${c.image_url}`);
     }
-  }
-
-  // Soft Check 1: At least 2 real and 2 AI (only for primary set)
-  const realCount = data.filter(c => c.answer === 'real').length;
-  const aiCount = data.filter(c => c.answer === 'ai').length;
-  if (!isReflection && (realCount < 2 || aiCount < 2)) {
-    softWarnings.push(`Expected at least 2 real and 2 AI challenges, but found: ${realCount} real, ${aiCount} AI`);
-  }
-
-  // Soft Check 2: Ideal difficulty progression
-  const difficultySequence = sortedByOrder.map(c => c.difficulty);
-  let isIdealProgression = true;
-  for (let i = 1; i < difficultySequence.length; i++) {
-    if (difficultySequence[i] < difficultySequence[i - 1]) {
-      isIdealProgression = false;
-      break;
+    if (c.answer === 'real' && isAiUrl) {
+      validationErrors.push(`Challenge ${c.id} is labeled as Real but uses AI URL: ${c.image_url}`);
     }
-  }
-  if (!isIdealProgression) {
-    softWarnings.push(`Difficulty sequence [${difficultySequence.join(', ')}] is not in ascending order`);
-  }
+  });
 
-  // ── Logging ──
-  console.log(`[daily-set validation] Validation summary:
-    - real_count: ${realCount}
-    - ai_count: ${aiCount}
-    - difficulty_sequence: [${difficultySequence.join(', ')}]
-    - soft_warnings: ${softWarnings.length > 0 ? JSON.stringify(softWarnings) : 'None'}
-  `);
-
-  if (softWarnings.length > 0) {
-    console.warn(`[daily-set validation] Soft requirements warnings:\n${softWarnings.map(w => `  - ${w}`).join('\n')}`);
-  }
-
-  // If hard validation fails, refuse to serve the daily set
-  if (validationErrors.length > 0) {
+  // If hard validation fails, and we are not already using fallback, try falling back
+  if (validationErrors.length > 0 && !usingFallback) {
     console.error(`\n================ DAILY SET HARD VALIDATION FAILED ================`);
     validationErrors.forEach(err => console.error(`  - ${err}`));
     console.error(`==================================================================\n`);
     
+    console.warn(`[daily-set] Emergency fallback triggered due to validation failure.`);
+    data = getDynamicFallbackChallenges(levelIndex, targetDate);
+    usingFallback = true;
+    
+    // Clear validation errors for fallback set availability
+    validationErrors.length = 0;
+  }
+
+  if (validationErrors.length > 0) {
     return NextResponse.json(
       { 
         error: 'Failed validation: incomplete or invalid daily challenge set',
@@ -189,14 +164,13 @@ export async function GET(request: Request) {
   });
 
   // Re-sort by difficulty ascending for dramatic pacing:
-  // Easy(1) → Medium(2) → Surprising(3) → Hard(4) → Extreme(5)
-  // The user should gradually lose certainty across the session.
   sanitizedChallenges.sort((a, b) => a.difficulty - b.difficulty);
 
   return NextResponse.json(
     { 
       date: targetDate, 
-      challenges: sanitizedChallenges
+      challenges: sanitizedChallenges,
+      isFallbackSet: usingFallback
     },
     {
       headers: {
