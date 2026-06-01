@@ -68,6 +68,12 @@ export default function GameShell({
         />
       </div>
 
+      {/* ── Top Nav Cinematic Shadow Gradient Backdrop ── */}
+      <div className="absolute top-0 inset-x-0 z-20 h-40 bg-gradient-to-b from-background/95 via-background/45 to-transparent pointer-events-none" />
+
+      {/* ── Bottom Panel Cinematic Shadow Gradient Backdrop ── */}
+      <div className="absolute bottom-0 inset-x-0 z-20 h-72 bg-gradient-to-t from-[#1f2126] via-[#1f2126]/75 to-transparent pointer-events-none" />
+
       {/* ── Floating: Top Navigation Overlay ── */}
       <div className="absolute top-0 inset-x-0 z-30 pointer-events-none flex flex-col pt-[env(safe-area-inset-top)]">
         <div className="pointer-events-auto">
@@ -77,8 +83,8 @@ export default function GameShell({
             <div className="h-1 bg-outline/5 w-full" />
           )}
         </div>
-        <div className="flex items-center justify-between px-4 pb-12 pt-2">
-          <div className="font-sans text-[10px] font-light uppercase tracking-[0.24em] text-muted/60">
+        <div className="flex items-center justify-between px-4 pt-2">
+          <div className="font-sans text-[10px] font-light uppercase tracking-[0.24em] text-muted/65">
             UNCANNY
           </div>
           <div className="font-sans text-[11px] font-light uppercase tracking-[0.18em] text-muted/70">
@@ -92,31 +98,38 @@ export default function GameShell({
             />
           </div>
         </div>
-      </div>
-
-      {/* ── Floating: Translucent Gallery Question Tag ── */}
-      <div className="absolute top-[88px] left-0 right-0 z-30 flex justify-center pointer-events-none">
-        <div className="px-3.5 py-1.5 font-sans text-[10px] font-light uppercase tracking-[0.18em] text-muted/80">
-          <span>Image {currentIndex + 1} of {total}</span>
-          <span className="mx-2 text-outline/20">—</span>
-          <span>AI or Real?</span>
+        
+        {/* Gallery Question Tag - Relatively placed below indicators to adapt to Safe Areas */}
+        <div className="mt-4 flex justify-center w-full">
+          <div className="px-3.5 py-1.5 font-sans text-[10px] font-light uppercase tracking-[0.18em] text-muted/80 bg-background/30 backdrop-blur-[1px] rounded-[2px]">
+            <span>Image {currentIndex + 1} of {total}</span>
+            <span className="mx-2 text-outline/20">—</span>
+            <span>AI or Real?</span>
+          </div>
         </div>
       </div>
 
       {/* ── Committing Pending Loader ── */}
       {isCommitting && (
-        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-background/28">
-          <div className="font-sans text-[10px] font-light uppercase tracking-[0.26em] text-muted/60">
-            {copy.gameplay.commitPending}
+        <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center bg-black/45 backdrop-blur-[1.5px] transition-opacity duration-300">
+          <div className="bg-[#1f2126]/95 border border-[#f0ece9]/25 shadow-2xl px-8 py-5 rounded-[4px] flex flex-col items-center gap-3 max-w-[200px]">
+            <div className="flex gap-1.5 items-center justify-center">
+              <span className="w-1.5 h-1.5 bg-[#c8963e] rounded-full animate-ping" />
+              <span className="w-1.5 h-1.5 bg-[#c8963e] rounded-full animate-pulse" />
+              <span className="w-1.5 h-1.5 bg-[#c8963e] rounded-full animate-ping" />
+            </div>
+            <div className="font-mono text-[10.5px] font-medium uppercase tracking-[0.28em] text-[#f0ece9] text-center">
+              {copy.gameplay.commitPending}
+            </div>
           </div>
         </div>
       )}
 
       {/* ── Floating: Bottom Action Panel Overlay ── */}
-      <div className="absolute bottom-0 inset-x-0 z-30 pointer-events-none px-4 pb-[calc(env(safe-area-inset-bottom)+1.2rem)] pt-20">
+      <div className="absolute bottom-0 inset-x-0 z-50 pointer-events-none px-4 pb-[calc(env(safe-area-inset-bottom)+1.2rem)] pt-20">
         <div className="pointer-events-auto flex flex-col w-full">
           <SocialTensionHint text={socialHint} />
-          <ReasoningTags visible={showReasoningTags} onTagSelected={onTagSelected} />
+          <ReasoningTags visible={showReasoningTags} challengeId={challenge.id} onTagSelected={onTagSelected} />
           <div className="mt-4">
             <DecisionControls disabled={disabled} onDecision={onDecision} />
           </div>

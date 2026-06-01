@@ -15,11 +15,11 @@ export const copy = {
     decisionKicker: 'choose',
     real: 'Real',
     ai: 'AI',
-    loading: 'loading challenge',
+    loading: "loading today's set",
     missing: 'challenge unavailable',
     socialTension: [
       'Most users failed here.',
-      'Human observers disagreed.',
+      'Other players disagreed.',
       'People trusted the wrong details.',
       'This one caused hesitation.',
       'Something feels off.',
@@ -31,10 +31,10 @@ export const copy = {
   investigation: {
     fragments: [
       'Something feels slightly wrong.',
-      'A subtle light anomaly.',
+      'A subtle lighting detail.',
       'Look closer at the texture.',
       'Did a camera capture this?',
-      'Observers hesitated here.',
+      'Other players hesitated here.',
       'An unnatural sharpness.',
     ],
   },
@@ -49,21 +49,21 @@ export const copy = {
     real: 'This image was real.',
     ai: 'This image was AI.',
     timeout: 'No answer selected.',
-    correct: 'You were right.',
-    wrong: 'You were fooled.',
+    correct: 'Correct',
+    wrong: 'Fooled',
     noConsensus: 'Users were split.',
     majorityAi: 'Most users thought this was AI.',
     majorityReal: 'Most users thought this was real.',
-    split: 'Human observers disagreed.',
-    realOrigin: 'Organic capture. Verifiable details.',
-    aiOrigin: 'Synthetic representation. Generated details.',
+    split: 'Other players disagreed.',
+    realOrigin: 'Real Photograph. Source verified.',
+    aiOrigin: 'AI Image. Generated details.',
     unknownOrigin: 'Origin unverified.',
     networkFallback: 'Source unverified.',
   },
 
   speed: {
     impulsive: 'Your responses were near-instant. You relied on instinct over analysis.',
-    deliberate: 'You took measured time before committing. A careful observer.',
+    deliberate: 'You took measured time before deciding. A careful player.',
     cautious: 'You lingered on most images. The uncertainty was visible.',
     hesitant: 'You hesitated significantly. The images held your attention too long.',
     earlyStrong: 'Your instincts were strongest early in the session.',
@@ -71,7 +71,7 @@ export const copy = {
   },
 
   results: {
-    label: 'results',
+    label: "Today's Results",
     metric: 'accuracy',
     comparison: (comparison: number) => `You scored higher than ${comparison}% of players today.`,
     recurrence: (streak: number) => `streak ${streak}`,
@@ -196,3 +196,47 @@ export function reasoningInsight(results: GuessResult[]): string | null {
 
   return `Most cited: ${topTag}`;
 }
+
+export function getDynamicTags(challengeId: string | undefined): string[] {
+  const pool = [
+    'lighting',
+    'texture',
+    'too clean',
+    'shadows',
+    'reflections',
+    'geometry',
+    'focus',
+    'details',
+    'sharpness',
+    'colors',
+    'patterns',
+    'background',
+    'proportions',
+    'organic',
+    'symmetry'
+  ];
+
+  if (!challengeId) {
+    return ['lighting', 'texture', 'too clean'];
+  }
+
+  let hash = 0;
+  for (let i = 0; i < challengeId.length; i++) {
+    hash = challengeId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  const selected: string[] = [];
+  let tempHash = Math.abs(hash);
+
+  while (selected.length < 3) {
+    const idx = tempHash % pool.length;
+    const tag = pool[idx];
+    if (!selected.includes(tag)) {
+      selected.push(tag);
+    }
+    tempHash = Math.floor(tempHash / pool.length) + 13;
+  }
+
+  return selected;
+}
+
