@@ -9,6 +9,16 @@ export const copy = {
     cta: 'Begin challenge',
   },
 
+  intro: {
+    dayLabel: (n: number) => `DAY ${n}`,
+    statImages: 'IMAGES',
+    statSeconds: 'S EACH',
+    statTries: 'TRY / DAY',
+    streak: (n: number) => `STREAK ${n}`,
+    play: 'Play',
+    yesterdayFallback: "Yesterday's set fooled most players.",
+  },
+
   gameplay: {
     commitPending: 'verifying',
     investigatePrompt: 'hold to look closer',
@@ -59,6 +69,15 @@ export const copy = {
     aiOrigin: 'AI Image. Generated details.',
     unknownOrigin: 'Origin unverified.',
     networkFallback: 'Source unverified.',
+    stampAi: 'AI-MADE',
+    stampReal: 'REAL PHOTO',
+    giveaway: 'THE GIVEAWAY',
+    next: 'Next image',
+    seeResults: 'See results',
+    saidAi: (p: number) => `${p}% SAID AI`,
+    saidReal: (p: number) => `${p}% SAID REAL`,
+    fooled: (p: number) => `${p}% WERE FOOLED`,
+    noConsensusYet: 'NO CONSENSUS YET',
   },
 
   speed: {
@@ -97,6 +116,10 @@ export const copy = {
       if (result.guess === 'timeout') return 'skipped';
       return result.correct ? 'right' : 'wrong';
     },
+    beat: (p: number) => `You beat ${p}% of players today.`,
+    share: 'Share result',
+    challenge: 'Challenge a friend',
+    nextSet: (hms: string) => `NEXT SET IN ${hms}`,
   },
 
   cta: {

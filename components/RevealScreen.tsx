@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import type { GuessResult, RevealData } from '@/lib/types';
 import { copy, getDynamicTags } from '@/lib/copy';
+import VerdictStamp from '@/components/VerdictStamp';
+import CrowdSplitBar from '@/components/CrowdSplitBar';
 import Image from 'next/image';
 
 interface RevealScreenProps {
@@ -65,15 +67,15 @@ export default function RevealScreen({
 }: RevealScreenProps) {
   const isAI = data.answer === 'ai';
   const totalGuesses = data.guesses_ai + data.guesses_real;
-  const failureRate = totalGuesses > 0 
-    ? Math.round(((isAI ? data.guesses_real : data.guesses_ai) / totalGuesses) * 100) 
+  const failureRate = totalGuesses > 0
+    ? Math.round(((isAI ? data.guesses_real : data.guesses_ai) / totalGuesses) * 100)
     : 0;
-  
+
   const timeRemainingVal = result?.timeRemaining ?? null;
-  const timeTaken = result?.guess === 'timeout' 
-    ? null 
-    : timeRemainingVal !== null 
-      ? 12 - timeRemainingVal 
+  const timeTaken = result?.guess === 'timeout'
+    ? null
+    : timeRemainingVal !== null
+      ? 12 - timeRemainingVal
       : null;
 
   const isCorrect = result?.correct ?? false;
@@ -104,69 +106,69 @@ export default function RevealScreen({
         src={imageUrl}
         alt="Revealed image"
         fill
-        className="object-cover opacity-35"
+        className="object-cover opacity-80"
         draggable={false}
         sizes="100vw"
         priority
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a] via-[#0f172a]/85 to-[#0f172a]/50 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/20 pointer-events-none" />
+
+      {/* ── Verdict Stamp on the image ── */}
+      <div className="absolute top-[calc(env(safe-area-inset-top)+4.5rem)] inset-x-0 z-20 flex justify-center pointer-events-none">
+        <VerdictStamp answer={data.answer} />
+      </div>
 
       {/* ── Main Content Area ── */}
       <section className="absolute inset-0 z-20 flex flex-col justify-between px-6 pt-[calc(env(safe-area-inset-top)+2rem)] pb-[calc(env(safe-area-inset-bottom)+2rem)] max-w-xl mx-auto w-full">
         {/* Top Indicators */}
-        <div className="flex justify-between items-center font-mono text-[9px] uppercase tracking-wider text-muted/60">
+        <div className="flex justify-between items-center font-mono text-label uppercase tracking-label text-muted/60">
           <span>Reveal Set</span>
           <span>Image {currentIndex + 1} of {total}</span>
         </div>
 
         {/* Middle Narrative Panel */}
-        <div className="flex flex-col justify-center flex-grow py-8">
+        <div className="flex flex-col justify-end flex-grow py-8">
           {/* Immediate Verdict Badge */}
           <div className="mb-4">
             {isTimeout ? (
-              <span className="inline-block text-[11px] font-sans font-extrabold tracking-widest uppercase text-wrong">
-                ⏱️ TIME EXPIRED
+              <span className="inline-block font-mono text-label-lg font-bold tracking-label uppercase text-wrong">
+                TIME EXPIRED
               </span>
             ) : isCorrect ? (
-              <span className="inline-block text-[11px] font-sans font-extrabold tracking-widest uppercase text-[#10b981]">
-                ✓ CORRECT
+              <span className="inline-block font-mono text-label-lg font-bold tracking-label uppercase text-real">
+                CORRECT
               </span>
             ) : (
-              <span className="inline-block text-[11px] font-sans font-extrabold tracking-widest uppercase text-[#ef4444]">
-                ✗ FOOLED
+              <span className="inline-block font-mono text-label-lg font-bold tracking-label uppercase text-wrong">
+                FOOLED
               </span>
             )}
           </div>
 
           {/* spaced Kicker */}
-          <div className="font-sans text-[10px] font-semibold uppercase tracking-wider text-muted/90 mb-3 flex items-center gap-2">
-            {isAI ? (
-              <>
-                <span className="text-[#f59e0b]">⚡</span>
-                <span className="text-[#f59e0b]">AI GENERATED</span>
-              </>
-            ) : (
-              <>
-                <span className="text-[#10b981]">📷</span>
-                <span className="text-[#10b981]">REAL PHOTOGRAPH</span>
-              </>
-            )}
+          <div className={`font-mono text-label font-semibold uppercase tracking-label mb-3 ${isAI ? 'text-wrong' : 'text-real'}`}>
+            {isAI ? 'AI GENERATED' : 'REAL PHOTOGRAPH'}
           </div>
 
           {/* Emotional Headline */}
-          <h1 className="text-2xl sm:text-3xl font-light leading-[1.25] text-foreground tracking-wide font-serif italic mb-6">
-            &ldquo;{emotionalSentence}&rdquo;
+          <h1 className="text-2xl sm:text-3xl font-sans font-light leading-[1.25] text-foreground tracking-wide mb-6">
+            {emotionalSentence}
           </h1>
 
-          {/* Context Details */}
+          {/* The Giveaway */}
           {data.context_short && (
-            <p className="text-sm font-sans font-light text-[#f8fafc] leading-relaxed border-l-2 border-[#f59e0b] pl-4 py-0.5 mb-5">
-              {data.context_short}
-            </p>
+            <div className="border-l border-border-dim pl-4 py-0.5 mb-5">
+              <span className="block font-mono text-label uppercase tracking-label text-muted/80 mb-1">
+                {copy.reveal.giveaway}
+              </span>
+              <p className="text-sm font-sans font-light text-foreground leading-relaxed">
+                {data.context_short}
+              </p>
+            </div>
           )}
 
           {/* AI Prompt or Photographer Credit */}
-          <p className="text-xs leading-relaxed text-[#abb1bd] font-light mb-6">
+          <p className="text-xs leading-relaxed text-muted font-light mb-6">
             {isAI ? (
               data.ai_prompt ? (
                 <span>Prompt: &ldquo;{data.ai_prompt}&rdquo;</span>
@@ -182,18 +184,20 @@ export default function RevealScreen({
             )}
           </p>
 
-          {/* consensus stats */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[9px] text-[#abb1bd]/70 uppercase tracking-wider border-t border-[#334155]/40 pt-4 mb-6">
-            {timeTaken !== null && (
-              <span>spent: {timeTaken.toFixed(1)}s</span>
-            )}
-            <span>consensus: {totalGuesses > 0 ? `${100 - failureRate}% correct` : '--%'}</span>
-            <span>players: {totalGuesses.toLocaleString()}</span>
+          {/* Crowd split */}
+          <div className="border-t border-border-dim/60 pt-4 mb-6">
+            <CrowdSplitBar guessesAi={data.guesses_ai} guessesReal={data.guesses_real} answer={data.answer} />
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-label text-muted/70 uppercase tracking-label">
+              {timeTaken !== null && (
+                <span>spent: {timeTaken.toFixed(1)}s</span>
+              )}
+              <span>players: {totalGuesses.toLocaleString()}</span>
+            </div>
           </div>
 
           {/* Optional Reasoning Tags inside Reveal Screen */}
-          <div className="border-t border-[#334155]/40 pt-4">
-            <span className="block font-sans text-[10px] text-[#abb1bd]/60 uppercase tracking-widest mb-3">
+          <div className="border-t border-border-dim/60 pt-4">
+            <span className="block font-mono text-label text-muted/60 uppercase tracking-label mb-3">
               Optional: What gave it away?
             </span>
             <div className="flex flex-wrap gap-2">
@@ -204,12 +208,12 @@ export default function RevealScreen({
                     key={tag}
                     type="button"
                     onClick={() => handleTagClick(tag)}
-                    className={`font-sans text-[10px] uppercase tracking-wider px-3.5 py-1.5 border transition-all rounded-[4px] cursor-pointer ${
+                    className={`font-mono text-label uppercase tracking-label px-3.5 py-1.5 border transition-all cursor-pointer ${
                       isActive
-                        ? 'border-[#f59e0b] text-[#f59e0b] bg-[#f59e0b]/10 font-semibold'
+                        ? 'border-foreground text-background bg-foreground font-semibold'
                         : selectedTag !== null
-                          ? 'border-transparent text-[#abb1bd]/30 cursor-not-allowed bg-transparent'
-                          : 'border-[#334155] text-[#abb1bd] bg-[#1e293b]/30 hover:border-[#abb1bd] hover:bg-[#1e293b]/60'
+                          ? 'border-transparent text-muted/30 cursor-not-allowed bg-transparent'
+                          : 'border-border-dim text-muted bg-surface/40 hover:border-outline hover:bg-surface/70 active:border-outline active:bg-surface/70'
                     }`}
                     disabled={selectedTag !== null}
                   >
@@ -222,14 +226,13 @@ export default function RevealScreen({
         </div>
 
         {/* Bottom Actions Area */}
-        <div className="pt-4 border-t border-[#334155]/40 flex justify-end">
+        <div className="pt-4 border-t border-border-dim/60">
           <button
             type="button"
             onClick={onNext}
-            className="px-6 py-3 bg-[#f59e0b] hover:bg-[#d97706] text-[#0f172a] font-bold text-xs uppercase tracking-widest rounded-[4px] transition-all hover:scale-[1.02] active:scale-[0.98] shadow-md flex items-center gap-1 cursor-pointer"
+            className="w-full min-h-14 px-6 py-3 bg-primary text-background font-mono font-bold text-label-lg uppercase tracking-caps transition-all hover:bg-primary/90 active:bg-primary/90 active:scale-[0.99] cursor-pointer"
           >
-            <span>{isLast ? 'See Results' : 'Next Image'}</span>
-            <span className="text-[10px]">➔</span>
+            {isLast ? copy.reveal.seeResults : copy.reveal.next}
           </button>
         </div>
       </section>

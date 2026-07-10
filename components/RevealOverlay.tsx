@@ -27,7 +27,7 @@ export default function RevealOverlay({ data, visible }: RevealOverlayProps) {
       <div className="absolute inset-0 scanline-field opacity-60" />
 
       <div className="relative z-10 reveal-flash w-full max-w-sm border border-outline-variant bg-surface/90 px-6 py-7">
-        <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted/55">
+        <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted/85">
           {verdictLabel}
         </div>
 
@@ -35,18 +35,18 @@ export default function RevealOverlay({ data, visible }: RevealOverlayProps) {
           {answerLabel}
         </div>
 
-        <p className="mt-5 text-sm text-muted leading-relaxed">
+        <p className="mt-5 text-sm text-muted/95 leading-relaxed">
           {revealOrigin(data)}
         </p>
 
         {data.answer === 'ai' && data.ai_prompt && (
-          <p className="mt-4 border-l border-ai/50 pl-3 text-[10px] font-mono text-muted/60 italic leading-relaxed line-clamp-2">
+          <p className="mt-4 border-l border-ai/50 pl-3 text-[10px] font-mono text-muted/90 italic leading-relaxed line-clamp-2">
             &quot;{data.ai_prompt}&quot;
           </p>
         )}
 
         {data.answer === 'real' && (
-          <div className="mt-4 text-[10px] font-mono text-muted/60 uppercase tracking-[0.12em] leading-relaxed">
+          <div className="mt-4 text-[10px] font-mono text-muted/90 uppercase tracking-[0.12em] leading-relaxed">
             {data.photographer_name && data.photographer_url && data.unsplash_url ? (
               <span>
                 observed by <a href={`${data.photographer_url}?utm_source=uncanny_mvp&utm_medium=referral`} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">{data.photographer_name}</a> via <a href={`${data.unsplash_url}?utm_source=uncanny_mvp&utm_medium=referral`} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">Unsplash</a>
@@ -60,7 +60,7 @@ export default function RevealOverlay({ data, visible }: RevealOverlayProps) {
         )}
 
         {data.guesses_ai + data.guesses_real > 5 && (
-          <div className="mt-5 border-t border-outline-variant pt-4 text-[10px] text-muted/55 font-mono uppercase tracking-[0.15em]">
+          <div className="mt-5 border-t border-outline-variant pt-4 text-[10px] text-muted/85 font-mono uppercase tracking-[0.15em]">
             {revealConsensus(data)}
           </div>
         )}

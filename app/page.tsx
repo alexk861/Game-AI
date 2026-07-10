@@ -1,744 +1,290 @@
-'use client';
-
-import { useEffect, useState, useCallback, useRef } from 'react';
-import WelcomeScreen from '@/components/WelcomeScreen';
-import GameShell from '@/components/GameShell';
-import RevealScreen from '@/components/RevealScreen';
-import ResultsDebrief from '@/components/ResultsDebrief';
-import ArchiveExhausted from '@/components/ArchiveExhausted';
-import { copy, socialTensionFor } from '@/lib/copy';
-import { analytics } from '@/lib/analytics';
-import {
-  initTodaySession,
-  getStorage,
-  markTodayStarted,
-  addResult,
-  updateLatestReasoningTag,
-  completeSet,
-  hasCompletedToday,
-  hasStartedToday,
-  getResumeIndex,
-  resetTodaySessionForAdExtraPlay,
-  unlockRewardedReflection,
-  addReflectionResult,
-  completeReflection,
-} from '@/lib/storage';
-import type { Challenge, GuessResult, GamePhase, RevealData, UncannyStorage } from '@/lib/types';
-import { TIMER_DURATION_SECONDS, TOTAL_DAILY_CHALLENGES } from '@/lib/gameConfig';
-import { useRewardedAd } from '@/hooks/useRewardedAd';
-import CalmAdTransitionOverlay from '@/components/CalmAdTransitionOverlay';
-
-const TIMER_DURATION = TIMER_DURATION_SECONDS;
-const REVEAL_DURATION = 5200;
-const TOTAL_CHALLENGES = TOTAL_DAILY_CHALLENGES;
-
-function socialHintFor(challenge: Challenge, index: number): string {
-  return socialTensionFor(challenge.id, index);
-}
-
-export default function Home() {
-  const [phase, setPhase] = useState<GamePhase>('loading');
-  const [challenges, setChallenges] = useState<Challenge[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [results, setResults] = useState<GuessResult[]>([]);
-  const [showReasoningTags, setShowReasoningTags] = useState(false);
-  const [revealData, setRevealData] = useState<RevealData | null>(null);
-  const [timerRunning, setTimerRunning] = useState(false);
-  const [timerKey, setTimerKey] = useState(0);
-  const [setDate, setSetDate] = useState('');
-  const [streak, setStreak] = useState(0);
-  const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null);
-  const [elapsedMs, setElapsedMs] = useState(0);
-  const [completionMs, setCompletionMs] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const submittingRef = useRef(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const challengeStartedAtRef = useRef(0);
-
-  // Premium Rewarded Reflection States
-  const [adOverlayState, setAdOverlayState] = useState<'none' | 'decompressing' | 'reentering'>('none');
-  const [isReflectionPlay, setIsReflectionPlay] = useState(false);
-  const [activeAdLevel, setActiveAdLevel] = useState<number>(0);
-  const [reflectionLevel, setReflectionLevel] = useState<number>(0);
-  const [lastReflectionUnlockAt, setLastReflectionUnlockAt] = useState<string | null>(null);
-  const adRewardEarnedRef = useRef(false);
-
-  // Challenge Play States
-  const [isChallengePlay, setIsChallengePlay] = useState(false);
-  const [challengeSetParam, setChallengeSetParam] = useState<string | null>(null);
-  const [zenMode, setZenMode] = useState(false);
-
-  const loadDailySet = useCallback(async (state: UncannyStorage, completed: boolean) => {
-    try {
-      const activeReflection = !!(state.rewardedReflectionUsedToday && !state.rewardedReflectionCompleted);
-      setIsReflectionPlay(activeReflection);
-      const currentLevel = state.reflectionLevel ?? 0;
-
-      const res = await fetch(activeReflection ? `/api/daily-set?mode=reflection-${currentLevel}` : '/api/daily-set');
-      if (!res.ok) {
-        if (completed) {
-          setPhase('completed');
-          return;
-        }
-
-        setError(res.status === 404
-          ? copy.errors.archiveUnavailable
-          : copy.errors.signalInterrupted
-        );
-        setPhase('error');
-        return;
-      }
-
-      const data = await res.json();
-      setChallenges(data.challenges);
-      setSetDate(data.date);
-
-      if (completed) {
-        if (activeReflection) {
-          setResults(state.rewardedReflectionResults || []);
-        } else {
-          setResults(state.todayResults);
-        }
-        setStreak(state.currentStreak);
-        setSessionStartedAt(state.todayStartedAt);
-        setCompletionMs(state.todayCompletionMs);
-        setElapsedMs(state.todayCompletionMs ?? 0);
-        analytics.returningUser(state.currentStreak, state.totalSetsPlayed);
-        setPhase('exhausted');
-        return;
-      }
-
-      const resumeIdx = activeReflection ? (state.rewardedReflectionResults || []).length : getResumeIndex();
-      const currentTotal = activeReflection
-        ? currentLevel === 3
-          ? 1
-          : currentLevel === 2
-            ? 2
-            : 3
-        : TOTAL_DAILY_CHALLENGES;
-      const playableTotal = Math.min(currentTotal, data.challenges.length);
-
-      if (resumeIdx >= playableTotal) {
-        if (activeReflection) {
-          const finalState = completeReflection(state.rewardedReflectionCompletionMs ?? 0);
-          setReflectionLevel(finalState.reflectionLevel ?? 0);
-          setLastReflectionUnlockAt(finalState.lastReflectionUnlockAt ?? null);
-          setResults(finalState.rewardedReflectionResults || []);
-          setPhase('exhausted');
-        } else {
-          const finalState = completeSet();
-          setResults(finalState.todayResults);
-          setStreak(finalState.currentStreak);
-          setSessionStartedAt(finalState.todayStartedAt);
-          setCompletionMs(finalState.todayCompletionMs);
-          setElapsedMs(finalState.todayCompletionMs ?? 0);
-          analytics.returningUser(finalState.currentStreak, finalState.totalSetsPlayed);
-          setPhase('completed');
-        }
-        return;
-      }
-
-      if (activeReflection) {
-        setResults(state.rewardedReflectionResults || []);
-        setCurrentIndex(resumeIdx);
-        const startTime = state.rewardedReflectionUnlockedAt
-          ? new Date(state.rewardedReflectionUnlockedAt).getTime()
-          : Date.now();
-        setSessionStartedAt(startTime);
-        setElapsedMs(Date.now() - startTime);
-      } else {
-        const timingState = state.todayStartedAt === null ? markTodayStarted() : state;
-        setSessionStartedAt(timingState.todayStartedAt);
-        setElapsedMs(timingState.todayStartedAt === null ? 0 : Date.now() - timingState.todayStartedAt);
-
-        if (resumeIdx > 0) {
-          setResults(timingState.todayResults);
-          setCurrentIndex(resumeIdx);
-        }
-      }
-
-      analytics.sessionStarted(data.date);
-      challengeStartedAtRef.current = Date.now();
-      setPhase('playing');
-      setTimerRunning(true);
-
-      const challenge = data.challenges[resumeIdx] || data.challenges[0];
-      if (challenge) {
-        analytics.challengeStarted(challenge.id, challenge.set_order, challenge.difficulty);
-      }
-    } catch {
-      setError(copy.errors.networkUnstable);
-      setPhase(completed ? 'completed' : 'error');
-    }
-  }, []);
-
-  const loadChallengeSet = useCallback(async (setQuery: string) => {
-    try {
-      setPhase('loading');
-      const res = await fetch(`/api/daily-set?set=${encodeURIComponent(setQuery)}`);
-      if (!res.ok) {
-        setError(copy.errors.archiveUnavailable);
-        setPhase('error');
-        return;
-      }
-
-      const data = await res.json();
-      setChallenges(data.challenges);
-      setSetDate(data.date);
-      setResults([]);
-      setPhase('entry');
-    } catch {
-      setError(copy.errors.networkUnstable);
-      setPhase('error');
-    }
-  }, []);
-
-  const handleUnlockReflection = useCallback(() => {
-    const state = unlockRewardedReflection();
-    const newLevel = state.reflectionLevel ?? 1;
-    setReflectionLevel(newLevel);
-    setLastReflectionUnlockAt(state.lastReflectionUnlockAt ?? null);
-
-    // Log reflection_level_started event
-    analytics.reflectionLevelStarted(newLevel);
-
-    setIsReflectionPlay(true);
-    setCurrentIndex(0);
-    setResults([]);
-    setRevealData(null);
-    setTimerRunning(false);
-    setCompletionMs(null);
-    setElapsedMs(0);
-    void loadDailySet(state, false);
-  }, [loadDailySet]);
-
-  const handleAdClosed = useCallback(() => {
-    setAdOverlayState('none');
-    if (!adRewardEarnedRef.current) {
-      const nextLevel = activeAdLevel || (getStorage().reflectionLevel ?? 0) + 1;
-      
-      // Log reflection_ad_dismissed and reflection_dropout
-      analytics.reflectionAdDismissed(nextLevel);
-      analytics.reflectionDropout(nextLevel);
-    }
-  }, [activeAdLevel]);
-
-  const handleRewardEarned = useCallback(() => {
-    adRewardEarnedRef.current = true;
-    const nextLevel = activeAdLevel || (getStorage().reflectionLevel ?? 0) + 1;
-    
-    // Log reflection_ad_completed event
-    analytics.reflectionAdCompleted(nextLevel);
-
-    setAdOverlayState('reentering');
-    setTimeout(() => {
-      handleUnlockReflection();
-      setAdOverlayState('none');
-    }, 2500);
-  }, [handleUnlockReflection, activeAdLevel]);
-
-  const { triggerAd, adPlaying } = useRewardedAd(handleRewardEarned, handleAdClosed);
-
-  const handleRequestAd = useCallback(() => {
-    const state = getStorage();
-    const currentLevel = state.reflectionLevel ?? 0;
-    const nextLevel = Math.min(3, currentLevel + 1);
-
-    // Log reflection_request event
-    analytics.reflectionRequest(nextLevel);
-
-    setActiveAdLevel(nextLevel);
-    adRewardEarnedRef.current = false;
-
-    setAdOverlayState('decompressing');
-    setTimeout(() => {
-      // Log reflection_ad_started event
-      analytics.reflectionAdStarted(nextLevel);
-      triggerAd();
-    }, 2500);
-  }, [triggerAd]);
-
-  useEffect(() => {
-    if (sessionStartedAt === null || (phase !== 'playing' && phase !== 'investigating' && phase !== 'revealing')) {
-      return;
-    }
-
-    const intervalId = setInterval(() => {
-      setElapsedMs(Date.now() - sessionStartedAt);
-    }, 500);
-
-    return () => clearInterval(intervalId);
-  }, [phase, sessionStartedAt]);
-
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    const initId = setTimeout(() => {
-      const params = new URLSearchParams(window.location.search);
-      const setQuery = params.get('set');
-
-      if (setQuery) {
-        setIsChallengePlay(true);
-        setChallengeSetParam(setQuery);
-        void loadChallengeSet(setQuery);
-        return;
-      }
-
-      const state = initTodaySession();
-      setReflectionLevel(state.reflectionLevel ?? 0);
-      setLastReflectionUnlockAt(state.lastReflectionUnlockAt ?? null);
-
-      if (hasCompletedToday()) {
-        void loadDailySet(state, true);
-        return;
-      }
-
-      if (!hasStartedToday()) {
-        setPhase('entry');
-        return;
-      }
-
-      void loadDailySet(state, false);
-    }, 0);
-
-    return () => clearTimeout(initId);
-  }, [loadDailySet, loadChallengeSet]);
-
-  const handleBegin = useCallback(() => {
-    if (isChallengePlay) {
-      setSessionStartedAt(Date.now());
-      setElapsedMs(0);
-      setCompletionMs(null);
-      setCurrentIndex(0);
-      setResults([]);
-      setTimerKey(prev => prev + 1);
-      challengeStartedAtRef.current = Date.now();
-      setPhase('playing');
-      setTimerRunning(true);
-      return;
-    }
-
-    const state = markTodayStarted();
-    setSessionStartedAt(state.todayStartedAt);
-    setElapsedMs(0);
-    setCompletionMs(null);
-    setPhase('loading');
-    void loadDailySet(state, false);
-  }, [isChallengePlay, loadDailySet]);
-
-  const handleUnlockExtraPlay = useCallback(() => {
-    const state = resetTodaySessionForAdExtraPlay();
-    setReflectionLevel(state.reflectionLevel ?? 0);
-    setLastReflectionUnlockAt(state.lastReflectionUnlockAt ?? null);
-    setCurrentIndex(0);
-    setResults([]);
-    setRevealData(null);
-    setTimerRunning(false);
-    setCompletionMs(null);
-    setElapsedMs(0);
-    setPhase('entry');
-  }, []);
-
-  const advanceToNext = useCallback((currentResults: GuessResult[]) => {
-    const nextIndex = currentResults.length;
-    const currentLevel = getStorage().reflectionLevel ?? 1;
-    const currentTotal = isReflectionPlay
-      ? currentLevel === 3
-        ? 1
-        : currentLevel === 2
-          ? 2
-          : 3
-      : TOTAL_DAILY_CHALLENGES;
-
-    if (nextIndex >= currentTotal || nextIndex >= challenges.length) {
-      if (isReflectionPlay) {
-        // Log reflection_level_completed event
-        analytics.reflectionLevelCompleted(currentLevel);
-
-        // If it was Level 3 (Final Anomaly), log anomaly_completion event
-        if (currentLevel === 3) {
-          analytics.anomalyCompletion();
-        }
-
-        setPhase('exhausted');
-      } else if (isChallengePlay) {
-        setCompletionMs(sessionStartedAt ? Date.now() - sessionStartedAt : 0);
-        setElapsedMs(sessionStartedAt ? Date.now() - sessionStartedAt : 0);
-        const score = currentResults.filter(result => result.correct).length;
-        analytics.setCompleted(score, 0, setDate);
-        setPhase('completed');
-      } else {
-        const finalState = completeSet();
-        setStreak(finalState.currentStreak);
-        setCompletionMs(finalState.todayCompletionMs);
-        setElapsedMs(finalState.todayCompletionMs ?? elapsedMs);
-        const score = currentResults.filter(result => result.correct).length;
-        analytics.setCompleted(score, finalState.currentStreak, setDate);
-        setPhase('completed');
-      }
-    } else {
-      setCurrentIndex(nextIndex);
-      setRevealData(null);
-      setShowReasoningTags(false);
-      setTimerKey(previous => previous + 1);
-      challengeStartedAtRef.current = Date.now();
-      setPhase('playing');
-      setTimerRunning(true);
-
-      const nextChallenge = challenges[nextIndex];
-      if (nextChallenge) {
-        analytics.challengeStarted(nextChallenge.id, nextChallenge.set_order, nextChallenge.difficulty);
-      }
-    }
-  }, [challenges, elapsedMs, setDate, isReflectionPlay, isChallengePlay, sessionStartedAt]);
-
-  const submitGuess = useCallback(async (guess: 'ai' | 'real' | 'timeout') => {
-    if (phase !== 'playing' && phase !== 'investigating') return;
-    if (submittingRef.current) return;
-
-    submittingRef.current = true;
-
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
-
-    const challenge = challenges[currentIndex];
-    if (!challenge) {
-      if (abortControllerRef.current === abortController) {
-        submittingRef.current = false;
-      }
-      return;
-    }
-
-    setTimerRunning(false);
-    const elapsedSeconds = Math.max(0, (Date.now() - challengeStartedAtRef.current) / 1000);
-    const timeRemaining = guess === 'timeout'
-      ? 0
-      : Math.max(0, Math.min(TIMER_DURATION, TIMER_DURATION - elapsedSeconds));
-
-    if (navigator.vibrate) navigator.vibrate(30);
-
-    if (guess === 'timeout') {
-      analytics.timerExpired(challenge.id, challenge.set_order);
-    }
-
-    try {
-      const effectiveGuess = guess === 'timeout' ? 'ai' : guess;
-      const res = await fetch('/api/guess', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ challengeId: challenge.id, guess: effectiveGuess }),
-        signal: abortController.signal,
-      });
-
-      if (!res.ok) throw new Error('Failed to submit guess');
-
-      const data = await res.json();
-      const guessResult: GuessResult = {
-        challengeId: challenge.id,
-        guess,
-        correct: guess === 'timeout' ? false : data.correct,
-        timeRemaining,
-        answer: data.answer,
-        imageUrl: challenge.image_url,
-      };
-
-      const reveal: RevealData = {
-        correct: guessResult.correct,
-        answer: data.answer,
-        context_short: data.context_short,
-        ai_prompt: data.ai_prompt,
-        source_credit: data.source_credit,
-        photographer_name: data.photographer_name,
-        photographer_url: data.photographer_url,
-        unsplash_url: data.unsplash_url,
-        guesses_ai: data.guesses_ai,
-        guesses_real: data.guesses_real,
-      };
-
-      if (guess !== 'timeout') {
-        analytics.guessSubmitted(challenge.id, guess, data.correct, timeRemaining);
-      }
-      if (guessResult.correct) {
-        analytics.resultCorrect(challenge.id, challenge.set_order, challenge.difficulty);
-      } else {
-        analytics.resultWrong(challenge.id, challenge.set_order, challenge.difficulty);
-      }
-      analytics.challengeRevealed(challenge.id, guessResult.correct);
-
-      let updatedResults: GuessResult[];
-      if (isReflectionPlay) {
-        const finalState = addReflectionResult(guessResult);
-        updatedResults = finalState.rewardedReflectionResults || [];
-        setResults(updatedResults);
-        const currentLevel = finalState.reflectionLevel ?? 1;
-        const currentTotal = currentLevel === 3 ? 1 : currentLevel === 2 ? 2 : 3;
-        if (updatedResults.length >= currentTotal) {
-          const finalDuration = sessionStartedAt ? Date.now() - sessionStartedAt : 0;
-          const finishedState = completeReflection(finalDuration);
-          setReflectionLevel(finishedState.reflectionLevel ?? 0);
-          setLastReflectionUnlockAt(finishedState.lastReflectionUnlockAt ?? null);
-        }
-      } else if (isChallengePlay) {
-        updatedResults = [...results, guessResult];
-        setResults(updatedResults);
-        const currentTotal = TOTAL_DAILY_CHALLENGES;
-        if (updatedResults.length >= currentTotal || updatedResults.length >= challenges.length) {
-          setCompletionMs(sessionStartedAt ? Date.now() - sessionStartedAt : 0);
-          setElapsedMs(sessionStartedAt ? Date.now() - sessionStartedAt : 0);
-        }
-      } else {
-        const finalState = addResult(guessResult);
-        updatedResults = finalState.todayResults;
-        setResults(updatedResults);
-        const currentTotal = TOTAL_DAILY_CHALLENGES;
-        if (updatedResults.length >= currentTotal || updatedResults.length >= challenges.length) {
-          const finalStateCompleted = completeSet(Date.now());
-          setStreak(finalStateCompleted.currentStreak);
-          setCompletionMs(finalStateCompleted.todayCompletionMs);
-          setElapsedMs(finalStateCompleted.todayCompletionMs ?? 0);
-        }
-      }
-
-      setShowReasoningTags(true);
-      setTimeout(() => {
-        setShowReasoningTags(false);
-        setRevealData(reveal);
-        setPhase('revealing');
-        setTimeout(() => advanceToNext(updatedResults), REVEAL_DURATION);
-      }, 2200);
-    } catch (error: unknown) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        return;
-      }
-
-      const guessResult: GuessResult = {
-        challengeId: challenge.id,
-        guess,
-        correct: false,
-        timeRemaining,
-        answer: 'ai',
-        imageUrl: challenge.image_url,
-      };
-      const reveal: RevealData = {
-        correct: false,
-        answer: 'ai',
-        context_short: copy.reveal.networkFallback,
-        ai_prompt: null,
-        source_credit: null,
-        photographer_name: null,
-        photographer_url: null,
-        unsplash_url: null,
-        guesses_ai: 0,
-        guesses_real: 0,
-      };
-
-      analytics.resultWrong(challenge.id, challenge.set_order, challenge.difficulty);
-      analytics.challengeRevealed(challenge.id, false);
-
-      let updatedResults: GuessResult[];
-      if (isReflectionPlay) {
-        const finalState = addReflectionResult(guessResult);
-        updatedResults = finalState.rewardedReflectionResults || [];
-        setResults(updatedResults);
-        const currentLevel = finalState.reflectionLevel ?? 1;
-        const currentTotal = currentLevel === 3 ? 1 : currentLevel === 2 ? 2 : 3;
-        if (updatedResults.length >= currentTotal) {
-          const finalDuration = sessionStartedAt ? Date.now() - sessionStartedAt : 0;
-          const finishedState = completeReflection(finalDuration);
-          setReflectionLevel(finishedState.reflectionLevel ?? 0);
-          setLastReflectionUnlockAt(finishedState.lastReflectionUnlockAt ?? null);
-        }
-      } else if (isChallengePlay) {
-        updatedResults = [...results, guessResult];
-        setResults(updatedResults);
-        const currentTotal = TOTAL_DAILY_CHALLENGES;
-        if (updatedResults.length >= currentTotal || updatedResults.length >= challenges.length) {
-          setCompletionMs(sessionStartedAt ? Date.now() - sessionStartedAt : 0);
-          setElapsedMs(sessionStartedAt ? Date.now() - sessionStartedAt : 0);
-        }
-      } else {
-        const finalState = addResult(guessResult);
-        updatedResults = finalState.todayResults;
-        setResults(updatedResults);
-        const currentTotal = TOTAL_DAILY_CHALLENGES;
-        if (updatedResults.length >= currentTotal || updatedResults.length >= challenges.length) {
-          const finalStateCompleted = completeSet(Date.now());
-          setStreak(finalStateCompleted.currentStreak);
-          setCompletionMs(finalStateCompleted.todayCompletionMs);
-          setElapsedMs(finalStateCompleted.todayCompletionMs ?? 0);
-        }
-      }
-
-      setShowReasoningTags(true);
-      setTimeout(() => {
-        setShowReasoningTags(false);
-        setRevealData(reveal);
-        setPhase('revealing');
-        setTimeout(() => advanceToNext(updatedResults), REVEAL_DURATION);
-      }, 2200);
-    } finally {
-      if (abortControllerRef.current === abortController) {
-        submittingRef.current = false;
-        abortControllerRef.current = null;
-      }
-    }
-  }, [phase, challenges, currentIndex, results, advanceToNext, isReflectionPlay, sessionStartedAt]);
-
-  const handleTimerExpire = useCallback(() => {
-    if (phase === 'playing' || phase === 'investigating') {
-      void submitGuess('timeout');
-    }
-  }, [phase, submitGuess]);
-
-  const handleInvestigatingChange = useCallback((investigating: boolean) => {
-    setPhase(current => {
-      if (investigating && current === 'playing') return 'investigating';
-      if (!investigating && current === 'investigating') return 'playing';
-      return current;
-    });
-  }, []);
-
-  const handleTagSelected = useCallback((tag: string) => {
-    setResults(prev => {
-      if (prev.length === 0) return prev;
-      const updated = [...prev];
-      updated[updated.length - 1] = { ...updated[updated.length - 1], reasoningTag: tag };
-      return updated;
-    });
-    updateLatestReasoningTag(tag);
-  }, []);
-
-  if (phase === 'entry') {
-    return (
-      <>
-        <WelcomeScreen onBegin={handleBegin} zenMode={zenMode} setZenMode={setZenMode} />
-        {adOverlayState !== 'none' && <CalmAdTransitionOverlay state={adOverlayState} />}
-      </>
-    );
-  }
-
-  if (phase === 'loading') {
-    return (
-      <>
-        <main className="flex h-[100dvh] flex-col items-center justify-center bg-background cinematic-bg">
-          <div className="noise-overlay" />
-          <div className="relative z-10 font-mono text-[10px] uppercase tracking-[0.3em] text-muted/60">
-            {copy.gameplay.loading}
-          </div>
-        </main>
-        {adOverlayState !== 'none' && <CalmAdTransitionOverlay state={adOverlayState} />}
-      </>
-    );
-  }
-
-  if (phase === 'error') {
-    return (
-      <>
-        <main className="flex h-[100dvh] flex-col items-center justify-center bg-background cinematic-bg px-8">
-          <div className="noise-overlay" />
-          <div className="relative z-10 font-mono text-[10px] uppercase tracking-[0.3em] text-muted/60">
-            {copy.errors.sourceUnresolved}
-          </div>
-          <div className="relative z-10 mt-5 max-w-xs text-center text-sm leading-relaxed text-muted">{error}</div>
-        </main>
-        {adOverlayState !== 'none' && <CalmAdTransitionOverlay state={adOverlayState} />}
-      </>
-    );
-  }
-
-  if (phase === 'completed') {
-    return (
-      <>
-        <ResultsDebrief
-          results={results}
-          challenges={challenges}
-          streak={streak}
-          setDate={setDate}
-          completionMs={completionMs}
-          onUnlockExtraPlay={handleUnlockExtraPlay}
-          onRequestReflection={handleRequestAd}
-          adAlreadyUnlocked={reflectionLevel >= 3}
-          reflectionLevel={reflectionLevel}
-          lastReflectionUnlockAt={lastReflectionUnlockAt}
-          isChallengePlay={isChallengePlay}
-        />
-        {adOverlayState !== 'none' && <CalmAdTransitionOverlay state={adOverlayState} level={activeAdLevel} />}
-      </>
-    );
-  }
-
-  if (phase === 'exhausted') {
-    return (
-      <>
-        <ArchiveExhausted
-          onUnlockExtraPlay={handleUnlockExtraPlay}
-          onRequestReflection={handleRequestAd}
-          adAlreadyUnlocked={reflectionLevel >= 3}
-          reflectionLevel={reflectionLevel}
-          lastReflectionUnlockAt={lastReflectionUnlockAt}
-        />
-        {adOverlayState !== 'none' && <CalmAdTransitionOverlay state={adOverlayState} level={activeAdLevel} />}
-      </>
-    );
-  }
-
-  const currentChallenge = challenges[currentIndex];
-
-  if (!currentChallenge) {
-    return (
-      <>
-        <main className="flex h-[100dvh] items-center justify-center bg-background cinematic-bg">
-          <div className="font-mono text-sm text-muted">{copy.gameplay.missing}</div>
-        </main>
-        {adOverlayState !== 'none' && <CalmAdTransitionOverlay state={adOverlayState} />}
-      </>
-    );
-  }
-
-  if (phase === 'revealing' && revealData) {
-    return (
-      <>
-        <RevealScreen
-          imageUrl={currentChallenge.image_url}
-          data={revealData}
-          result={results[results.length - 1] || null}
-        />
-        {adOverlayState !== 'none' && <CalmAdTransitionOverlay state={adOverlayState} />}
-      </>
-    );
-  }
+import { Metadata } from 'next';
+import Link from 'next/link';
+import Image from 'next/image';
+import UncannyLogo from '@/components/UncannyLogo';
+import MobileNav from '@/components/landing/MobileNav';
+import ScreenshotCarousel from '@/components/landing/ScreenshotCarousel';
+
+export const metadata: Metadata = {
+  title: 'UNCANNY — Daily Perception Game',
+  description: 'UNCANNY is a daily perception game where you decide whether images are real or AI.',
+  openGraph: {
+    title: 'UNCANNY — Daily Perception Game',
+    description: 'UNCANNY is a daily perception game where you decide whether images are real or AI.',
+    images: ['/og-preview.png'],
+    type: 'website',
+    url: 'https://www.uncanny.info',
+  },
+  alternates: {
+    canonical: '/',
+  },
+};
+
+export default function HomeLandingPage() {
+  const screenshots = [
+    {
+      src: '/screenshots/ss1.png',
+      title: '01. Daily Challenge',
+      desc: 'Five images every day.',
+    },
+    {
+      src: '/screenshots/ss2.png',
+      title: '02. Look Closer',
+      desc: 'Hold to inspect details.',
+    },
+    {
+      src: '/screenshots/ss3.png',
+      title: '03. Instant Reveal',
+      desc: 'See if your instinct was right.',
+    },
+    {
+      src: '/screenshots/ss4.png',
+      title: '04. Crowd Comparison',
+      desc: 'Compare your guess with other players.',
+    },
+    {
+      src: '/screenshots/ss5.png',
+      title: '05. Extra Rounds',
+      desc: 'Continue with optional extra images.',
+    },
+  ];
 
   return (
-    <>
-      <GameShell
-        challenge={currentChallenge}
-        nextImageUrl={challenges[currentIndex + 1]?.image_url}
-        phase={phase}
-        timerKey={timerKey}
-        timerDuration={TIMER_DURATION}
-        timerRunning={timerRunning && !zenMode}
-        zenMode={zenMode}
-        elapsedMs={elapsedMs}
-        currentIndex={currentIndex}
-        total={isReflectionPlay ? (getStorage().reflectionLevel === 3 ? 1 : getStorage().reflectionLevel === 2 ? 2 : 3) : TOTAL_DAILY_CHALLENGES}
-        results={results}
-        socialHint={socialHintFor(currentChallenge, currentIndex)}
-        showReasoningTags={showReasoningTags}
-        onTimerExpire={handleTimerExpire}
-        onDecision={submitGuess}
-        onInvestigatingChange={handleInvestigatingChange}
-        onTagSelected={handleTagSelected}
+    <main className="min-h-[100dvh] bg-background text-foreground relative font-sans scroll-smooth overflow-x-hidden pb-16">
+      {/* Schema.org JSON-LD structured data for superior AEO/SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "UNCANNY",
+            "operatingSystem": "Android, Web Browser",
+            "applicationCategory": "GameApplication",
+            "description": "UNCANNY is a daily game where you decide whether images are real or AI.",
+            "genre": "Puzzle, Trivia",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            }
+          })
+        }}
       />
-      {adOverlayState !== 'none' && <CalmAdTransitionOverlay state={adOverlayState} level={activeAdLevel} />}
-    </>
+
+      {/* Subtle, restrained gold background glow (Max opacity 0.04) */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(245,158,11,0.04),rgba(255,255,255,0))] pointer-events-none" />
+      <div className="noise-overlay pointer-events-none absolute inset-0 opacity-[0.01]" />
+
+      {/* ── Navigation ── */}
+      <header className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 md:px-16 py-4 bg-background/95 backdrop-blur-md border-b border-outline/10 shadow-lg">
+        <Link href="/" className="flex items-center gap-3 group">
+          <UncannyLogo size={24} className="text-accent-amber group-hover:scale-105 transition-transform" />
+          <span className="text-xl md:text-2xl font-bold tracking-[0.15em] text-foreground">UNCANNY</span>
+        </Link>
+        <MobileNav />
+      </header>
+
+      {/* ── Hero Section ── */}
+      <section className="relative pt-36 pb-16 px-6 max-w-4xl mx-auto flex flex-col items-center text-center">
+        {/* Simple live indicator */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface border border-accent-amber/20 mb-8">
+          <span className="flex h-1.5 w-1.5 rounded-full bg-accent-amber" />
+          <span className="font-sans text-[10px] uppercase tracking-wider text-muted font-bold">Today&apos;s challenge is live</span>
+        </div>
+
+        {/* Clear, human mixed-case headline */}
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-none text-foreground max-w-3xl">
+          Can you tell real from AI?
+        </h1>
+        
+        {/* High-conversion target sentence */}
+        <p className="mt-6 text-sm md:text-base text-accent-amber font-sans font-bold max-w-xl">
+          UNCANNY is a daily game where you decide whether images are real or AI.
+        </p>
+
+        <div className="mt-6 text-lg sm:text-xl md:text-2xl max-w-2xl text-muted font-light leading-relaxed space-y-1">
+          <p>Five images.</p>
+          <p>Twelve seconds each.</p>
+          <p>A new challenge every day.</p>
+        </div>
+
+        {/* Dynamic CTAs - Restrained with no glowing or pulsing animations */}
+        <div className="mt-10 flex flex-col sm:flex-row gap-4 w-full max-w-md justify-center items-center">
+          <Link
+            href="/game"
+            className="w-full sm:w-auto bg-accent-amber hover:bg-accent-amber/90 text-background font-bold py-4 px-8 text-center text-sm tracking-wider transition-all rounded-[3px] shadow-xl hover:scale-[1.01] active:scale-[0.98]"
+            style={{ color: 'var(--bg)' }}
+          >
+            Play Now
+          </Link>
+          <a
+            href="/uncanny-debug.apk"
+            download="uncanny-debug.apk"
+            className="w-full sm:w-auto bg-surface hover:bg-surface-container border border-outline/10 text-foreground py-4 px-8 text-center text-sm font-semibold tracking-wider transition-all rounded-[3px] flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.98]"
+            style={{ borderColor: 'var(--outline)', color: 'var(--text)' }}
+          >
+            <span>Download Android App</span>
+            <span className="text-[10px] text-accent-amber font-mono">(26.6 MB)</span>
+          </a>
+        </div>
+        
+        <p className="mt-4 text-xs text-muted/60 font-sans">
+          No account needed.
+        </p>
+      </section>
+
+      {/* ── Split Card Swipe Graphics (Non-face scenes only) ── */}
+      <section className="pb-20 px-6 max-w-2xl mx-auto">
+        <div className="relative aspect-[16/10] w-full rounded-[4px] overflow-hidden border border-outline/15 bg-surface shadow-2xl flex items-center justify-center">
+          {/* Subtle grid backdrop */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--outline-variant)_1px,transparent_1px),linear-gradient(to_bottom,var(--outline-variant)_1px,transparent_1px)] bg-[size:24px_24px] opacity-10" />
+
+          {/* Left half: AI generated scene (no faces) */}
+          <div className="absolute inset-y-0 left-0 w-1/2 overflow-hidden bg-surface-container-lowest/95 border-r-2 border-accent-amber/50">
+            <div className="absolute top-4 left-4 bg-wrong/20 border border-wrong/40 px-2.5 py-1 rounded-[3px] text-[9px] font-sans text-wrong uppercase tracking-wider font-bold">
+              AI
+            </div>
+            {/* Image Split Left */}
+            <div className="w-[200%] h-full relative opacity-60 grayscale brightness-75">
+              <Image src="/test-pollinations.jpg" alt="AI Generated Environment Scene" fill className="object-cover" />
+            </div>
+          </div>
+
+          {/* Right half: Real Photography scene (no faces) */}
+          <div className="absolute inset-y-0 right-0 w-1/2 overflow-hidden bg-background/95">
+            <div className="absolute top-4 right-4 bg-correct/20 border border-correct/40 px-2.5 py-1 rounded-[3px] text-[9px] font-sans text-correct uppercase tracking-wider font-bold">
+              Real
+            </div>
+            {/* Image Split Right */}
+            <div className="w-[200%] h-full relative right-full opacity-90">
+              <Image src="/test-pollinations.jpg" alt="Real Photographic Environment Capture" fill className="object-cover" />
+            </div>
+          </div>
+
+          {/* Swipe Indicator Handle */}
+          <div className="absolute z-20 flex flex-col items-center justify-center pointer-events-none">
+            <div className="bg-accent-amber text-background px-4 py-2 font-sans text-xs uppercase font-extrabold tracking-widest rounded-full shadow-2xl flex items-center gap-1.5 border-2 border-foreground">
+              <span>◀</span>
+              <span>Swipe to decide</span>
+              <span>▶</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── How It Works (4 Simple, restrained, readable cards) ── */}
+      <section id="how-it-works" className="py-20 bg-surface-container-low/40 border-y border-outline/10 px-6">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-extrabold text-center text-foreground mb-12 uppercase tracking-wide">
+            How It Works
+          </h2>
+          
+          <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-4">
+            {/* Card 1 */}
+            <div className="p-6 bg-surface border border-outline/10 rounded-[4px] flex flex-col items-center text-center shadow-lg hover:border-accent-amber/30 transition-colors">
+              <div className="w-12 h-12 rounded-full bg-accent-amber/10 border border-accent-amber/30 flex items-center justify-center mb-6">
+                <span className="text-accent-amber font-bold text-lg">🔍</span>
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-2">1. Look</h3>
+              <p className="text-xs text-muted leading-relaxed font-light">
+                Study the image.
+              </p>
+            </div>
+
+            {/* Card 2 */}
+            <div className="p-6 bg-surface border border-outline/10 rounded-[4px] flex flex-col items-center text-center shadow-lg hover:border-accent-amber/30 transition-colors">
+              <div className="w-12 h-12 rounded-full bg-accent-amber/10 border border-accent-amber/30 flex items-center justify-center mb-6">
+                <span className="text-accent-amber font-bold text-lg">↔️</span>
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-2">2. Decide</h3>
+              <p className="text-xs text-muted leading-relaxed font-light">
+                Choose Real or AI.
+              </p>
+            </div>
+
+            {/* Card 3 */}
+            <div className="p-6 bg-surface border border-outline/10 rounded-[4px] flex flex-col items-center text-center shadow-lg hover:border-accent-amber/30 transition-colors">
+              <div className="w-12 h-12 rounded-full bg-accent-amber/10 border border-accent-amber/30 flex items-center justify-center mb-6">
+                <span className="text-accent-amber font-bold text-lg">📊</span>
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-2">3. Compare</h3>
+              <p className="text-xs text-muted leading-relaxed font-light">
+                See how other players answered.
+              </p>
+            </div>
+
+            {/* Card 4 */}
+            <div className="p-6 bg-surface border border-outline/10 rounded-[4px] flex flex-col items-center text-center shadow-lg hover:border-accent-amber/30 transition-colors">
+              <div className="w-12 h-12 rounded-full bg-accent-amber/10 border border-accent-amber/30 flex items-center justify-center mb-6">
+                <span className="text-accent-amber font-bold text-lg">📅</span>
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-2">4. Return Tomorrow</h3>
+              <p className="text-xs text-muted leading-relaxed font-light">
+                A new set arrives every day.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Daily Streak Loop ── */}
+      <section className="py-20 px-6 max-w-4xl mx-auto text-center">
+        <h2 className="text-2xl md:text-3xl font-extrabold text-foreground mb-6 uppercase tracking-wide">
+          Play in Under 2 Minutes
+        </h2>
+        <p className="text-sm md:text-base text-muted max-w-xl mx-auto leading-relaxed font-light mb-12">
+          Keep it short, simple, and daily. Test your eye against the daily set, protect your streak, and see how you stack up globally.
+        </p>
+
+        {/* Micro Streak Counter UI */}
+        <div className="bg-surface border border-outline/10 rounded-[4px] max-w-sm mx-auto shadow-xl flex items-center justify-between p-6">
+          <div className="text-left">
+            <span className="block font-sans text-[10px] uppercase tracking-wider text-accent-amber font-bold">Daily Streak</span>
+            <span className="text-2xl font-black text-foreground mt-1 block">5 DAYS ACTIVE</span>
+          </div>
+          <div className="text-4xl">
+            🔥
+          </div>
+        </div>
+
+        {/* Wordle-style 5 boxes */}
+        <div className="flex justify-center gap-3 mt-10">
+          <div className="w-10 h-10 border-2 border-correct bg-correct/15 text-correct font-bold rounded-[4px] flex items-center justify-center">☑</div>
+          <div className="w-10 h-10 border-2 border-correct bg-correct/15 text-correct font-bold rounded-[4px] flex items-center justify-center">☑</div>
+          <div className="w-10 h-10 border-2 border-wrong bg-wrong/15 text-wrong font-bold rounded-[4px] flex items-center justify-center">☒</div>
+          <div className="w-10 h-10 border-2 border-correct bg-correct/15 text-correct font-bold rounded-[4px] flex items-center justify-center">☑</div>
+          <div className="w-10 h-10 border-2 border-outline/20 bg-transparent text-muted font-bold rounded-[4px] flex items-center justify-center">5</div>
+        </div>
+      </section>
+
+      {/* ── Screenshots ── */}
+      <section className="py-20 border-t border-outline/10 bg-surface-container-low/20 px-6">
+        <h2 className="text-2xl md:text-3xl font-extrabold text-foreground mb-12 text-center uppercase tracking-wide">
+          See the game
+        </h2>
+
+        <ScreenshotCarousel screenshots={screenshots} />
+      </section>
+
+      {/* ── Simple Elegant Footer ── */}
+      <footer className="py-12 bg-surface-container-lowest border-t border-outline/10 px-6 text-center text-xs">
+        <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex flex-col items-center md:items-start gap-1">
+            <div className="flex items-center gap-3">
+              <UncannyLogo size={20} className="text-accent-amber" />
+              <span className="font-sans uppercase tracking-[0.25em] text-foreground font-bold">UNCANNY</span>
+            </div>
+            <p className="text-[10px] text-muted/60 font-sans mt-1">Daily Perception Test</p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-6 font-sans text-[10px] uppercase tracking-wider text-muted">
+            <Link href="/privacy" className="hover:text-foreground transition-all">Privacy</Link>
+            <Link href="/terms" className="hover:text-foreground transition-all">Terms</Link>
+            <Link href="/contact" className="hover:text-foreground transition-all">Contact</Link>
+            <Link href="/google-play" className="hover:text-foreground transition-all">Google Play Info</Link>
+          </div>
+        </div>
+      </footer>
+    </main>
   );
 }

@@ -46,49 +46,24 @@ export default function Timer({ duration, running, onExpire }: TimerProps) {
 
   const percentage = (timeLeft / duration) * 100;
   const isUrgent = timeLeft <= 4;
-  const isCritical = timeLeft <= 2;
   const displaySeconds = Math.ceil(timeLeft);
+  const ringColor = isUrgent ? 'var(--wrong)' : 'var(--text)';
 
   return (
-    <div className="relative w-full">
-      {/* Countdown number */}
-      <div className="flex items-center justify-center py-2">
+    <div
+      className="relative h-11 w-11 rounded-full"
+      data-testid="timer-ring"
+      style={{ background: `conic-gradient(${ringColor} ${percentage}%, var(--border-dim) 0)` }}
+      role="timer"
+      aria-label={running ? `${displaySeconds} seconds remaining` : 'timer idle'}
+    >
+      <div className="absolute inset-[3px] grid place-items-center rounded-full bg-background">
         <span
-          className="font-mono text-xs tabular-nums tracking-wider"
-          style={{
-            color: isCritical
-              ? 'var(--error)'
-              : isUrgent
-                ? 'var(--accent-amber)'
-                : 'rgba(240, 236, 233, 0.65)',
-            fontWeight: isCritical ? 600 : isUrgent ? 500 : 300,
-          }}
+          className="font-mono text-label-lg tabular-nums"
+          style={{ color: ringColor, fontWeight: isUrgent ? 600 : 400 }}
         >
-          {running ? (
-            <>
-              <span className="text-[9px] uppercase tracking-[0.2em] mr-1.5 opacity-60">TIME</span>
-              {displaySeconds}s
-            </>
-          ) : (
-            <span className="text-[9px] uppercase tracking-[0.2em] opacity-40">—</span>
-          )}
+          {running ? `${displaySeconds}s` : '—'}
         </span>
-      </div>
-
-      {/* Progress bar */}
-      <div className="w-full h-1 bg-white/10 relative overflow-hidden">
-        <div
-          className="timer-bar h-full absolute left-0 top-0"
-          style={{
-            width: `${percentage}%`,
-            transitionDuration: '100ms',
-            backgroundColor: isCritical
-              ? 'var(--error)'
-              : isUrgent
-                ? 'var(--accent-amber)'
-                : 'var(--outline)',
-          }}
-        />
       </div>
     </div>
   );

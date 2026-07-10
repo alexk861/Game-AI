@@ -1,10 +1,15 @@
 import type { NextConfig } from "next";
 
+const isExport = process.env.CAPACITOR_BUILD === 'true';
+
 const nextConfig: NextConfig = {
+  output: isExport ? 'export' : undefined,
+  trailingSlash: isExport ? true : undefined,
   turbopack: {
     root: __dirname,
   },
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',

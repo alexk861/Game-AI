@@ -84,6 +84,68 @@ export async function GET(request: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .eq('status', 'deleted');
 
+    // 5. Fetch audience play telemetry from challenges table
+    const { data: allChallenges, error: challengesError } = await supabaseAdmin
+      .from('challenges')
+      .select('id, set_date, set_order, image_url, answer, guesses_ai, guesses_real, context_short');
+
+    if (challengesError) {
+      console.error('Error fetching challenges telemetry:', challengesError);
+    }
+
+    let totalPlays = 0;
+    let totalCorrect = 0;
+    let totalFooled = 0;
+    let totalGuessesAi = 0;
+    let totalGuessesReal = 0;
+    const fooledChallenges: any[] = [];
+
+    if (allChallenges) {
+      for (const ch of allChallenges) {
+        const guessesAi = ch.guesses_ai || 0;
+        const guessesReal = ch.guesses_real || 0;
+        const total = guessesAi + guessesReal;
+        
+        if (total > 0) {
+          totalPlays += total;
+          totalGuessesAi += guessesAi;
+          totalGuessesReal += guessesReal;
+          
+          let fooled = 0;
+          let correct = 0;
+          if (ch.answer === 'real') {
+            fooled = guessesAi;
+            correct = guessesReal;
+          } else {
+            fooled = guessesReal;
+            correct = guessesAi;
+          }
+          
+          totalCorrect += correct;
+          totalFooled += fooled;
+          const fooledRate = fooled / total;
+
+          fooledChallenges.push({
+            id: ch.id,
+            set_date: ch.set_date,
+            set_order: ch.set_order,
+            image_url: ch.image_url,
+            answer: ch.answer,
+            guesses_ai: guessesAi,
+            guesses_real: guessesReal,
+            total_guesses: total,
+            fooled_count: fooled,
+            fooled_rate: fooledRate,
+            context_short: ch.context_short
+          });
+        }
+      }
+    }
+
+    // Sort by fooled_rate descending to get top 10 most challenging pictures
+    fooledChallenges.sort((a, b) => b.fooled_rate - a.fooled_rate);
+    const topFooled = fooledChallenges.slice(0, 10);
+
     return NextResponse.json({
       top_archive: topArchive || [],
       weak_content: weakContent || [],
@@ -92,6 +154,16 @@ export async function GET(request: NextRequest) {
         total_ai_backlog: totalAiBacklog || 0,
         total_real_backlog: totalRealBacklog || 0,
         total_retired: retiredCount || 0,
+      },
+      audience_stats: {
+        total_plays: totalPlays,
+        total_correct: totalCorrect,
+        total_fooled: totalFooled,
+        accuracy_rate: totalPlays > 0 ? Number((totalCorrect / totalPlays).toFixed(4)) : 0,
+        ai_bias_ratio: totalPlays > 0 ? Number((totalGuessesAi / totalPlays).toFixed(4)) : 0,
+        guesses_ai: totalGuessesAi,
+        guesses_real: totalGuessesReal,
+        top_fooled: topFooled
       }
     });
 

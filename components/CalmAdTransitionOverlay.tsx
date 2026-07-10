@@ -30,48 +30,25 @@ export default function CalmAdTransitionOverlay({ state, level = 1 }: CalmAdTran
   }, [state]);
 
   const getContent = () => {
-    if (state === 'decompressing') {
-      switch (level) {
-        case 2:
-          return {
-            label: '[ DEEPENING OBSERVATION ]',
-            title: 'Deepening Observation',
-            description: 'Accessing deeper black archive records. Prepare your instinct.',
-          };
-        case 3:
-          return {
-            label: '[ ACCESSING FINAL ANOMALY ]',
-            title: 'Accessing Final Anomaly',
-            description: 'Accessing final unstable record. This archive was not intended for prolonged observation.',
-          };
-        default:
-          return {
-            label: '[ DAILY SEQUENCE RECORDED ]',
-            title: 'Requesting Unstable Record',
-            description: 'A sponsor-supported reflection will play.',
-          };
-      }
-    } else {
-      switch (level) {
-        case 2:
-          return {
-            label: '[ Entering Black Archive ]',
-            title: 'Entering Black Archive',
-            description: 'Two black archive records remain. Observe closely.',
-          };
-        case 3:
-          return {
-            label: '[ Isolating Final Anomaly ]',
-            title: 'Isolating Final Anomaly',
-            description: 'One final anomaly record remains. Watch.',
-          };
-        default:
-          return {
-            label: '[ UNSTABLE ARCHIVE RESTORED ]',
-            title: 'Restoring Tension',
-            description: 'Prepare your instinct. Three unstable records remain.',
-          };
-      }
+    switch (level) {
+      case 2:
+        return {
+          label: '[ EXTRA IMAGES ]',
+          title: 'Preparing Next Images',
+          description: 'Two extra images remain. Decide carefully.',
+        };
+      case 3:
+        return {
+          label: '[ FINAL IMAGE ]',
+          title: 'Final Image',
+          description: 'One image remains. Decide carefully.',
+        };
+      default:
+        return {
+          label: '[ EXTRA ROUND ]',
+          title: 'Preparing Extra Round',
+          description: 'Three extra images remain. Look closely.',
+        };
     }
   };
 
@@ -84,7 +61,7 @@ export default function CalmAdTransitionOverlay({ state, level = 1 }: CalmAdTran
 
       <section className="relative z-10 flex w-full max-w-md flex-col items-center px-8 text-center">
         {/* Subtle cinematic label */}
-        <div className="font-sans text-[9px] font-light uppercase tracking-[0.25em] text-muted/30 mb-8 animate-pulse">
+        <div className="font-mono text-label font-light uppercase tracking-kicker text-muted/80 mb-8 animate-pulse">
           {label}
         </div>
 
@@ -94,14 +71,14 @@ export default function CalmAdTransitionOverlay({ state, level = 1 }: CalmAdTran
         </h2>
 
         {/* Description */}
-        <p className="text-xs text-muted/50 leading-relaxed font-sans font-light max-w-xs mb-10 select-none min-h-[2.5rem]">
+        <p className="text-xs text-muted/85 leading-relaxed font-sans font-light max-w-xs mb-10 select-none min-h-[2.5rem]">
           {description}
         </p>
 
         {/* Cinematic Linear Progress Tracker */}
-        <div className="relative w-48 h-[1px] bg-outline/10 overflow-hidden">
+        <div className="relative w-48 h-[1px] bg-border-dim overflow-hidden">
           <div
-            className="absolute left-0 top-0 h-full bg-accent-amber/60 transition-all duration-300 ease-out"
+            className="absolute left-0 top-0 h-full bg-outline/60 transition-all duration-300 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>

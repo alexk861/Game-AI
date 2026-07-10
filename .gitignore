@@ -52,3 +52,12 @@ graphify-out/
 .graphify_semantic.json
 
 .env*.local
+
+# android (Capacitor) — never commit signing keys, machine paths, or build output
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+android/app/google-services.json
+*.jks
+*.keystore

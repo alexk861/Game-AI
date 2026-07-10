@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;600&amp;display=swap');
+      .brand { font-family: 'Outfit', sans-serif; font-weight: 200; font-size: 58px; letter-spacing: 0.45em; fill: #ffffff; text-anchor: middle; }
+      .kicker { font-family: 'Outfit', sans-serif; font-weight: 300; font-size: 26px; letter-spacing: 0.35em; fill: #c8963e; text-anchor: middle; text-transform: uppercase; }
+      .headline { font-family: 'Outfit', sans-serif; font-weight: 400; font-size: 46px; letter-spacing: 0.1em; fill: #ffffff; text-anchor: middle; }
+      .cta-btn { font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px; letter-spacing: 0.2em; fill: #121315; text-anchor: middle; }
+      .card-bg { fill: #18191c; stroke: rgba(255,255,255,0.05); stroke-width: 2; }
+    </style>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1920" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#08090a"/>
+      <stop offset="100%" stop-color="#111215"/>
+    </linearGradient>
+    <clipPath id="imageClip">
+      <rect x="90" y="580" width="900" height="680" rx="3" />
+    </clipPath>
+  </defs>
+
+  <!-- Deep background -->
+  <rect width="1080" height="1920" fill="url(#bgGrad)" />
+
+  <!-- Grid aesthetics in background -->
+  <line x1="90" y1="0" x2="90" y2="1920" stroke="rgba(255,255,255,0.02)" stroke-width="1"/>
+  <line x1="990" y1="0" x2="990" y2="1920" stroke="rgba(255,255,255,0.02)" stroke-width="1"/>
+
+  <!-- Brand Headers -->
+  <text x="564" y="300" class="brand">UNCANNY</text>
+  <text x="540" y="360" class="kicker">// DAILY INSTINCT DUEL</text>
+
+  <!-- Central Framed Teaser Card -->
+  <rect x="70" y="560" width="940" height="720" rx="5" class="card-bg" />
+  
+  <!-- Single teaser image (spoiler-free) -->
+  <g clip-path="url(#imageClip)">
+    <image href="https://images.unsplash.com/photo-1763644942208-5cbb0a9bc5cb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5NTM1MzB8MHwxfHNlYXJjaHwyMnx8c3VycmVhbCUyMGxhbmRzY2FwZXxlbnwwfDB8fHwxNzgwMjcyNTMwfDA&ixlib=rb-4.1.0&q=80&w=1080" x="90" y="580" width="900" height="680" preserveAspectRatio="xMidYMid slice" opacity="0.8"/>
+  </g>
+
+  <!-- Text and prompt -->
+  <text x="540" y="1400" class="headline">REAL OR AI GENERATED?</text>
+  <text x="540" y="1465" font-family="'Outfit', sans-serif" font-weight="200" font-size="28" fill="#a0a4a8" text-anchor="middle" letter-spacing="0.1em">Average accuracy is only 60%.</text>
+
+  <!-- Bottom CTA Area -->
+  <rect x="240" y="1600" width="600" height="96" rx="3" fill="#f0ece9" />
+  <text x="540" y="1656" class="cta-btn">PLAY DAILY SET</text>
+  
+  <text x="540" y="1740" font-family="'Outfit', sans-serif" font-weight="400" font-size="24" fill="#c8963e" text-anchor="middle" letter-spacing="0.15em">uncanny.info/challenge</text>
+</svg>

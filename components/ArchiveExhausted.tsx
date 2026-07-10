@@ -6,6 +6,7 @@ import BottomNav from './BottomNav';
 import Link from 'next/link';
 import { useRewardedAd } from '@/hooks/useRewardedAd';
 import CalmAdTransitionOverlay from './CalmAdTransitionOverlay';
+import UncannyLogo from '@/components/UncannyLogo';
 
 interface ArchiveExhaustedProps {
   onUnlockExtraPlay?: () => void;
@@ -13,6 +14,7 @@ interface ArchiveExhaustedProps {
   adAlreadyUnlocked?: boolean;
   reflectionLevel?: number;
   lastReflectionUnlockAt?: string | null;
+  isFallbackSet?: boolean;
 }
 
 export default function ArchiveExhausted({
@@ -21,6 +23,7 @@ export default function ArchiveExhausted({
   adAlreadyUnlocked = false,
   reflectionLevel = 0,
   lastReflectionUnlockAt = null,
+  isFallbackSet = false,
 }: ArchiveExhaustedProps) {
   const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
   const [adWatched, setAdWatched] = useState(false);
@@ -68,16 +71,17 @@ export default function ArchiveExhausted({
       <div className="relative min-h-[100dvh] flex flex-col items-center justify-center px-6 md:px-16 pt-28 pb-36">
         {/* Central Empty State Module */}
         <section className="relative z-10 w-full max-w-2xl flex flex-col items-center text-center">
-          <div className="font-sans text-[9px] font-light uppercase tracking-[0.2em] text-muted/40 mb-10">
-            Daily Archive
+          <UncannyLogo size={48} className="mb-8" />
+          <div className="font-mono text-label font-light uppercase tracking-kicker text-muted/90 mb-10">
+            Today's Set
           </div>
           
           <h1 className="font-sans text-2xl md:text-3xl font-light tracking-wide text-foreground mb-6">
             All images reviewed.
           </h1>
           
-          <p className="text-sm text-muted/50 max-w-sm mb-16 leading-relaxed font-sans font-light">
-            Today&apos;s photographic set is complete. The archive will refresh tomorrow.
+          <p className="text-sm text-muted/95 max-w-sm mb-16 leading-relaxed font-sans font-light">
+            Today's set is complete. A new set arrives tomorrow.
           </p>
 
           {/* Action buttons */}
@@ -88,22 +92,22 @@ export default function ArchiveExhausted({
                   type="button"
                   disabled={cooldownRemaining > 0}
                   onClick={onRequestReflection}
-                  className={`w-full border py-3.5 px-8 font-sans text-[10px] font-light uppercase tracking-[0.15em] transition-all text-center rounded-[2px] ${
+                  className={`w-full min-h-14 border py-3.5 px-8 font-mono text-label font-light uppercase tracking-label transition-all text-center ${
                     cooldownRemaining > 0
-                      ? 'border-outline/10 text-muted/35 cursor-not-allowed bg-transparent'
-                      : 'border-accent-amber/25 hover:border-accent-amber/50 text-accent-amber hover:bg-white/2 cursor-pointer'
+                      ? 'border-border-dim/60 text-muted/65 cursor-not-allowed bg-transparent'
+                      : 'border-outline/60 hover:border-outline text-foreground hover:bg-white/2 active:border-outline active:bg-white/2 cursor-pointer'
                   }`}
                 >
-                  {cooldownRemaining > 0 ? 'Allow the archive to stabilize.' : reflectionLevel === 1 ? 'Continue Observation' : reflectionLevel === 2 ? 'One final unstable record remains.' : 'Request Reflection'}
+                  {cooldownRemaining > 0 ? 'Preparing next set.' : reflectionLevel === 2 ? 'One final challenge remains.' : 'Continue Exploring'}
                 </button>
-                <p className="text-[9px] font-sans font-light tracking-wide text-muted/30 mt-3 text-center">
+                <p className="text-label font-sans font-light tracking-wide text-muted/90 mt-3 text-center">
                   {cooldownRemaining > 0
-                    ? `Neural pathways stabilizing... (${cooldownRemaining}s remaining)`
+                    ? `Preparing next set... (${cooldownRemaining}s remaining)`
                     : reflectionLevel === 1
-                      ? 'Two unstable records remain.'
+                      ? 'Two challenges remain. A short sponsor-supported video will play.'
                       : reflectionLevel === 2
-                        ? 'This archive was not intended for prolonged observation.'
-                        : 'Observe another sequence. A sponsor-supported reflection will play.'}
+                        ? 'This challenge was not intended for prolonged play. A short sponsor-supported video will play.'
+                        : 'Explore another set of 3 images. A short sponsor-supported video will play.'}
                 </p>
               </div>
             )}
@@ -114,12 +118,12 @@ export default function ArchiveExhausted({
                   type="button"
                   disabled={adPlaying}
                   onClick={handleWatchAndReplay}
-                  className="w-full border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-400 hover:bg-emerald-500/5 transition-all py-3.5 px-8 text-center font-sans text-[10px] font-light uppercase tracking-[0.15em] rounded-[2px] active:scale-[0.985] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full min-h-14 border border-outline/60 hover:border-outline text-foreground hover:bg-white/2 active:border-outline active:bg-white/2 transition-all py-3.5 px-8 text-center font-mono text-label font-light uppercase tracking-label active:scale-[0.985] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {adPlaying ? 'Playing…' : '▶ Watch & Play Again'}
+                  {adPlaying ? 'Playing…' : 'Replay Today\'s Set'}
                 </button>
-                <p className="text-[9px] font-sans font-light tracking-wide text-muted/30 mt-3 text-center">
-                  Watch a short sponsor message to replay today&apos;s archive.
+                <p className="text-label font-sans font-light tracking-wide text-muted/90 mt-3 text-center">
+                  A short sponsor-supported video will play.
                 </p>
               </div>
             )}
@@ -127,18 +131,20 @@ export default function ArchiveExhausted({
             {showOverlay && <CalmAdTransitionOverlay state={overlayPhase} />}
             
             <div className="flex flex-col sm:flex-row gap-4 w-full justify-center mt-4">
-              <Link 
-                href="/profile" 
-                className="flex-1 border border-outline/10 py-3.5 px-8 font-sans text-[10px] font-light uppercase tracking-[0.15em] text-muted hover:text-foreground hover:bg-white/2 transition-all text-center rounded-[2px]"
+              <Link
+                href="/profile"
+                className="flex-1 min-h-14 flex items-center justify-center border border-outline/60 py-3.5 px-8 font-mono text-label font-light uppercase tracking-label text-muted/90 hover:text-foreground hover:bg-white/2 active:text-foreground active:bg-white/2 transition-all text-center"
               >
-                Perception Record
+                Profile
               </Link>
-              <Link 
-                href="/leaderboard" 
-                className="flex-1 border border-outline/10 py-3.5 px-8 font-sans text-[10px] font-light uppercase tracking-[0.15em] text-muted hover:text-foreground hover:bg-white/2 transition-all text-center rounded-[2px]"
-              >
-                Observer Registry
-              </Link>
+              {!isFallbackSet && (
+                <Link
+                  href="/leaderboard"
+                  className="flex-1 min-h-14 flex items-center justify-center border border-outline/60 py-3.5 px-8 font-mono text-label font-light uppercase tracking-label text-muted/90 hover:text-foreground hover:bg-white/2 active:text-foreground active:bg-white/2 transition-all text-center"
+                >
+                  Compare with players
+                </Link>
+              )}
             </div>
           </div>
         </section>

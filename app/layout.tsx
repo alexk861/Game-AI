@@ -5,21 +5,21 @@ import './globals.css';
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || '';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://uncanny.app'),
-  title: 'UNCANNY / Daily Perception Record',
-  description: 'Five unresolved images. Decide what can be trusted.',
+  metadataBase: new URL('https://www.uncanny.info'),
+  title: 'UNCANNY / Daily Perception Game',
+  description: 'Can you tell real from AI? Daily perception test. Five unresolved images. Decide what can be trusted.',
   openGraph: {
-    title: 'UNCANNY / Daily Perception Record',
-    description: 'Five unresolved images. Decide what can be trusted.',
-    images: ['/og-image.png'],
+    title: 'UNCANNY / Daily Perception Game',
+    description: 'Can you tell real from AI? Daily perception test. Five unresolved images. Decide what can be trusted.',
+    images: ['/og-preview.png'],
     type: 'website',
-    url: 'https://uncanny.app',
+    url: 'https://www.uncanny.info',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'UNCANNY / Daily Perception Record',
-    description: 'Five unresolved images. Decide what can be trusted.',
-    images: ['/og-image.png'],
+    title: 'UNCANNY / Daily Perception Game',
+    description: 'Can you tell real from AI? Daily perception test. Five unresolved images. Decide what can be trusted.',
+    images: ['/og-preview.png'],
   },
   icons: {
     icon: '/favicon.ico',

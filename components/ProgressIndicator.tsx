@@ -9,7 +9,7 @@ interface ProgressIndicatorProps {
 export default function ProgressIndicator({ total, current, results }: ProgressIndicatorProps) {
   return (
     <div className="flex items-center gap-3" aria-label={`Image ${current + 1} of ${total}`}>
-      <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
+      <span className="font-mono text-label-lg uppercase tracking-label text-muted">
         {current + 1} / {total}
       </span>
       <div className="flex items-center gap-1.5">
@@ -21,14 +21,14 @@ export default function ProgressIndicator({ total, current, results }: ProgressI
           return (
             <span
               key={index}
-              className={`block h-[3px] w-6 transition-colors ${
-                isPast
-                  ? result.correct
-                    ? 'bg-muted'
-                    : 'bg-ai'
-                  : isCurrent
-                    ? 'bg-outline'
-                    : 'bg-outline-variant'
+              className={`block h-1.5 transition-all ${
+                isCurrent
+                  ? 'w-6 bg-foreground dot-active'
+                  : isPast
+                    ? result.correct
+                      ? 'w-1.5 bg-real'
+                      : 'w-1.5 bg-wrong'
+                    : 'w-1.5 bg-border-dim'
               }`}
             />
           );

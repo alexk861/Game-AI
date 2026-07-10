@@ -61,7 +61,7 @@ export async function generateAiCandidates(
       .eq('auto_approve_eligible', true)
       .gte('candidate_score', 75)
       .gte('suspicious_score', 70)
-      .in('status', ['review', 'approved', 'auto_approved']);
+      .in('status', ['review', 'approved']);
 
     if (countError) {
       const details = [countError.message, countError.details, countError.hint, countError.code].filter(Boolean).join(' | ');

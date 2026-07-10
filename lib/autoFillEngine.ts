@@ -204,44 +204,34 @@ async function selectEligibleCandidates(
       .filter(Boolean)
   );
 
-  // 2. Fetch parent_real_candidate_id for scheduled candidates to check duplicates
+  // 2. Fetch parent_real_candidate_id for scheduled candidates to check duplicates in chunks of 50
   const existingParentIds = new Set<string>();
   if (existingImageUrls.size > 0) {
-    const { data: matchedCandidates, error: matchError } = await supabase
-      .from('content_candidates')
-      .select('parent_real_candidate_id, prompt_used')
-      .in('image_url', Array.from(existingImageUrls));
+    const imageUrlsArray = Array.from(existingImageUrls);
+    const chunkSize = 50;
+    for (let i = 0; i < imageUrlsArray.length; i += chunkSize) {
+      const chunk = imageUrlsArray.slice(i, i + chunkSize);
+      const { data: matchedCandidates, error: matchError } = await supabase
+        .from('content_candidates')
+        .select('parent_real_candidate_id, prompt_used')
+        .in('image_url', chunk);
 
-    if (matchError) {
-      logs.push(`[auto-fill] Warning: Failed to query source candidates: ${matchError.message}`);
-    } else if (matchedCandidates) {
-      matchedCandidates.forEach(c => {
-        if (c.parent_real_candidate_id) {
-          existingParentIds.add(c.parent_real_candidate_id);
-        }
-        if (c.prompt_used) {
-          existingPrompts.add(normalizePrompt(c.prompt_used));
-        }
-      });
+      if (matchError) {
+        logs.push(`[auto-fill] Warning: Failed to query source candidates chunk ${i / chunkSize}: ${matchError.message}`);
+      } else if (matchedCandidates) {
+        matchedCandidates.forEach(c => {
+          if (c.parent_real_candidate_id) {
+            existingParentIds.add(c.parent_real_candidate_id);
+          }
+          if (c.prompt_used) {
+            existingPrompts.add(normalizePrompt(c.prompt_used));
+          }
+        });
+      }
     }
   }
 
   logs.push(`[duplicate-prevention] Existing DB items loaded: ${existingImageUrls.size} URLs, ${existingParentIds.size} Parent IDs, ${existingPrompts.size} prompt fingerprints.`);
-
-  // 3. Get all review candidates (broader query, filter in-app for precise control)
-  // Fetch 'review', 'approved', 'auto_approved' status candidates
-  const { data: allCandidates, error: candError } = await supabase
-    .from('content_candidates')
-    .select('*')
-    .in('status', ['review', 'approved', 'auto_approved'])
-    .not('image_url', 'is', null)
-    .order('candidate_score', { ascending: false })
-    .order('suspicious_score', { ascending: false })
-    .limit(100); // Over-fetch for filtering
-
-  if (candError) {
-    throw new Error(`Failed to fetch candidates: ${candError.message}`);
-  }
 
   let scannedCount = 0;
   let skippedLowScore = 0;
@@ -251,106 +241,152 @@ async function selectEligibleCandidates(
   let skippedDupPrompt = 0;
   let skippedCategoryLimit = 0;
 
-  const selected: ContentCandidate[] = [];
+  const selectedReal: ContentCandidate[] = [];
+  const selectedAi: ContentCandidate[] = [];
   const usedCategories = new Map<string, number>();
 
-  for (const candidate of allCandidates || []) {
-    scannedCount++;
-    if (selected.length >= limit) break;
-    const typedCandidate = candidate as ContentCandidate;
-    const isReal = typedCandidate.source === 'unsplash' || typedCandidate.source === 'real' || typedCandidate.answer === 'real';
-    const isAi = (
-      typedCandidate.source === 'nano_banana' &&
-      typedCandidate.source_type === 'ai_generated' &&
-      typedCandidate.answer === 'ai' &&
-      typedCandidate.safety_status === 'safe' &&
-      typedCandidate.auto_approve_eligible === true &&
-      typeof typedCandidate.prompt_used === 'string' &&
-      typedCandidate.prompt_used.trim().length > 0
-    );
+  // 3. Get review candidates page-by-page to prevent starvation
+  let page = 0;
+  const pageSize = 100;
+  let hasMore = true;
 
-    if (!isReal && !isAi) {
-      skippedLowScore++;
-      continue;
+  while ((selectedReal.length < limit || selectedAi.length < limit) && hasMore) {
+    const startRange = page * pageSize;
+    const endRange = (page + 1) * pageSize - 1;
+
+    const { data: allCandidates, error: candError } = await supabase
+      .from('content_candidates')
+      .select('*')
+      .in('status', ['review', 'approved', 'auto_approved'])
+      .not('image_url', 'is', null)
+      .order('candidate_score', { ascending: false })
+      .order('suspicious_score', { ascending: false })
+      .range(startRange, endRange);
+
+    if (candError) {
+      throw new Error(`Failed to fetch candidates on page ${page}: ${candError.message}`);
     }
 
-    // Label source mismatch guardrail (Real must not be AI URL, AI must not be Unsplash URL)
-    const isUnsplashUrl = candidate.image_url && (candidate.image_url.includes('images.unsplash.com') || candidate.image_url.includes('unsplash.com'));
-    const isAiUrl = candidate.image_url && (candidate.image_url.includes('/ai-generated/') || candidate.image_url.includes('/challenge-images/ai-generated/'));
-    
-    if (isReal && isAiUrl) {
-      console.warn(`[auto-fill] rejected_label_source_mismatch: Candidate ID ${candidate.id} (${candidate.source_type || 'unknown'}) is labeled as 'real' but uses an AI URL.`);
-      skippedLowScore++;
-      continue;
-    }
-    
-    if (isAi && isUnsplashUrl) {
-      console.warn(`[auto-fill] rejected_label_source_mismatch: Candidate ID ${candidate.id} (${candidate.source_type || 'unknown'}) is labeled as 'ai' but uses an Unsplash URL.`);
-      skippedLowScore++;
-      continue;
+    if (!allCandidates || allCandidates.length === 0) {
+      hasMore = false;
+      break;
     }
 
-    if (candidate.status === 'deleted' || candidate.status === 'rejected') {
-      skippedLowScore++;
-      continue;
-    }
+    for (const candidate of allCandidates) {
+      const typedCandidate = candidate as ContentCandidate;
+      const isReal = typedCandidate.source === 'unsplash' || typedCandidate.source === 'real' || typedCandidate.answer === 'real';
+      const isAi = (
+        typedCandidate.source === 'nano_banana' &&
+        typedCandidate.source_type === 'ai_generated' &&
+        typedCandidate.answer === 'ai' &&
+        typedCandidate.safety_status === 'safe' &&
+        typedCandidate.auto_approve_eligible === true &&
+        typeof typedCandidate.prompt_used === 'string' &&
+        typedCandidate.prompt_used.trim().length > 0
+      );
 
-    if (candidate.safety_status === 'unsafe') {
-      skippedLowScore++;
-      continue;
-    }
-
-    // Quality gate
-    if (candidate.candidate_score < 40) {
-      skippedLowScore++;
-      continue;
-    }
-
-    // Attribution gate applies to real/Unsplash rows only.
-    if (isReal && !candidate.photographer_name) {
-      skippedNoAttribution++;
-      continue;
-    }
-
-    // Three-Tier Duplicate prevention
-    // Tier A: Image URL
-    if (candidate.image_url && existingImageUrls.has(candidate.image_url)) {
-      skippedDupUrl++;
-      continue;
-    }
-
-    // Tier B: Parent Real Candidate ID
-    if (candidate.parent_real_candidate_id && existingParentIds.has(candidate.parent_real_candidate_id)) {
-      skippedDupParent++;
-      continue;
-    }
-
-    // Tier C: Prompt Fingerprint Hash
-    if (isAi && candidate.prompt_used) {
-      const fingerprint = normalizePrompt(candidate.prompt_used);
-      if (existingPrompts.has(fingerprint)) {
-        skippedDupPrompt++;
+      if (!isReal && !isAi) {
+        skippedLowScore++;
         continue;
       }
+
+      // Check if we already have enough of this type
+      if (isReal && selectedReal.length >= limit) continue;
+      if (isAi && selectedAi.length >= limit) continue;
+
+      scannedCount++;
+
+      // Label source mismatch guardrail (Real must not be AI URL, AI must not be Unsplash URL)
+      const isUnsplashUrl = candidate.image_url && (candidate.image_url.includes('images.unsplash.com') || candidate.image_url.includes('unsplash.com'));
+      const isAiUrl = candidate.image_url && (candidate.image_url.includes('/ai-generated/') || candidate.image_url.includes('/challenge-images/ai-generated/'));
+      
+      if (isReal && isAiUrl) {
+        console.warn(`[auto-fill] rejected_label_source_mismatch: Candidate ID ${candidate.id} (${candidate.source_type || 'unknown'}) is labeled as 'real' but uses an AI URL.`);
+        skippedLowScore++;
+        continue;
+      }
+      
+      if (isAi && isUnsplashUrl) {
+        console.warn(`[auto-fill] rejected_label_source_mismatch: Candidate ID ${candidate.id} (${candidate.source_type || 'unknown'}) is labeled as 'ai' but uses an Unsplash URL.`);
+        skippedLowScore++;
+        continue;
+      }
+
+      if (candidate.status === 'deleted' || candidate.status === 'rejected') {
+        skippedLowScore++;
+        continue;
+      }
+
+      if (candidate.safety_status === 'unsafe') {
+        skippedLowScore++;
+        continue;
+      }
+
+      // Quality gate
+      if (candidate.candidate_score < 40) {
+        skippedLowScore++;
+        continue;
+      }
+
+      // Attribution gate applies to real/Unsplash rows only.
+      if (isReal && !candidate.photographer_name) {
+        skippedNoAttribution++;
+        continue;
+      }
+
+      // Three-Tier Duplicate prevention
+      // Tier A: Image URL
+      if (candidate.image_url && existingImageUrls.has(candidate.image_url)) {
+        skippedDupUrl++;
+        continue;
+      }
+
+      // Tier B: Parent Real Candidate ID
+      if (candidate.parent_real_candidate_id && existingParentIds.has(candidate.parent_real_candidate_id)) {
+        skippedDupParent++;
+        continue;
+      }
+
+      // Tier C: Prompt Fingerprint Hash
+      if (isAi && candidate.prompt_used) {
+        const fingerprint = normalizePrompt(candidate.prompt_used);
+        if (existingPrompts.has(fingerprint)) {
+          skippedDupPrompt++;
+          continue;
+        }
+      }
+
+      // Diversity enforcement — avoid multiple images from the same category
+      // within the same auto-fill batch (soft limit: max 3 per category)
+      const cat = candidate.category || 'unknown';
+      const catCount = usedCategories.get(cat) || 0;
+      if (catCount >= 3) {
+        skippedCategoryLimit++;
+        continue; // Skip, try next candidate
+      }
+
+      if (isReal) {
+        selectedReal.push(typedCandidate);
+      } else {
+        selectedAi.push(typedCandidate);
+      }
+
+      usedCategories.set(cat, catCount + 1);
+
+      // Track newly selected elements in our duplicate sets for the remainder of this selection run
+      if (candidate.image_url) existingImageUrls.add(candidate.image_url);
+      if (candidate.parent_real_candidate_id) existingParentIds.add(candidate.parent_real_candidate_id);
+      if (isAi && candidate.prompt_used) existingPrompts.add(normalizePrompt(candidate.prompt_used));
     }
 
-    // Diversity enforcement — avoid multiple images from the same category
-    // within the same auto-fill batch (soft limit: max 3 per category)
-    const cat = candidate.category || 'unknown';
-    const catCount = usedCategories.get(cat) || 0;
-    if (catCount >= 3) {
-      skippedCategoryLimit++;
-      continue; // Skip, try next candidate
+    if (allCandidates.length < pageSize) {
+      hasMore = false;
+    } else {
+      page++;
     }
-
-    selected.push(typedCandidate);
-    usedCategories.set(cat, catCount + 1);
-
-    // Track newly selected elements in our duplicate sets for the remainder of this selection run
-    if (candidate.image_url) existingImageUrls.add(candidate.image_url);
-    if (candidate.parent_real_candidate_id) existingParentIds.add(candidate.parent_real_candidate_id);
-    if (isAi && candidate.prompt_used) existingPrompts.add(normalizePrompt(candidate.prompt_used));
   }
+
+  const selected = [...selectedReal, ...selectedAi];
 
   logs.push(`[select-summary] Scanned ${scannedCount} candidates. Selected: ${selected.length}.`);
   logs.push(`[select-summary] Skip Reasons:`);
@@ -557,13 +593,21 @@ async function scheduleCandidates(
 
     if (!schedError && allScheduled && allScheduled.length > 0) {
       const urls = allScheduled.map(s => s.image_url);
-      const { data: matchedCandidates } = await supabase
-        .from('content_candidates')
-        .select('image_url, parent_real_candidate_id, prompt_used')
-        .in('image_url', urls);
+      const matchedCandidates: Array<{ image_url: string; parent_real_candidate_id?: string | null; prompt_used?: string | null }> = [];
+      const chunkSize = 50;
+      for (let i = 0; i < urls.length; i += chunkSize) {
+        const chunk = urls.slice(i, i + chunkSize);
+        const { data } = await supabase
+          .from('content_candidates')
+          .select('image_url, parent_real_candidate_id, prompt_used')
+          .in('image_url', chunk);
+        if (data) {
+          matchedCandidates.push(...data);
+        }
+      }
 
       const matchMap = new Map<string, { parentId?: string; promptFingerprint?: string }>();
-      if (matchedCandidates) {
+      if (matchedCandidates.length > 0) {
         matchedCandidates.forEach(c => {
           matchMap.set(c.image_url, {
             parentId: c.parent_real_candidate_id || undefined,

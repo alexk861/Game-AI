@@ -1,6 +1,19 @@
+import { Metadata } from 'next';
 import TopNav from '@/components/TopNav';
 import Link from 'next/link';
 import Image from 'next/image';
+
+export const metadata: Metadata = {
+  title: 'Login — UNCANNY',
+  description: 'Log in to your UNCANNY account.',
+  alternates: {
+    canonical: '/login',
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function Login() {
   return (
@@ -43,7 +56,7 @@ export default function Login() {
             {/* Terminal Input */}
             <div className="group flex flex-col gap-2 w-full border-b border-outline focus-within:border-on-surface transition-colors">
               <label className="font-mono text-xs text-outline uppercase tracking-[0.2em] flex items-center gap-2" htmlFor="observer_id">
-                <span className="text-[10px]">01</span> OBSERVER ID
+                <span className="text-[10px]">01</span> PLAYER ID
               </label>
               <div className="flex items-center pb-2">
                 <span className="font-mono text-outline mr-2">&gt;</span>

@@ -5,6 +5,8 @@ import { analytics } from '@/lib/analytics';
 import InvestigationOverlay from '@/components/InvestigationOverlay';
 import { copy } from '@/lib/copy';
 import NextImage from 'next/image';
+import { Capacitor } from '@capacitor/core';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 
 interface SwipeCardProps {
   challengeId?: string;
@@ -108,7 +110,11 @@ export default function SwipeCard({
       if (challengeId !== undefined && difficulty !== undefined) {
         analytics.investigateUsed(challengeId, difficulty);
       }
-      if (navigator.vibrate) navigator.vibrate([10, 34, 10]);
+      if (Capacitor.isNativePlatform()) {
+        Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => {});
+      } else if (navigator.vibrate) {
+        navigator.vibrate([10, 34, 10]);
+      }
     }, 450); // Fluid standard 450ms long-press delay
   }, [disabled, exitDirection, challengeId, difficulty, clearInvestigateTimer, setInvestigating, updateTransformOrigin]);
 
@@ -145,7 +151,11 @@ export default function SwipeCard({
     if (Math.abs(dragState.delta) > THRESHOLD) {
       const direction = dragState.delta < 0 ? 'left' : 'right';
       setExitDirection(direction);
-      if (navigator.vibrate) navigator.vibrate(28);
+      if (Capacitor.isNativePlatform()) {
+        Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+      } else if (navigator.vibrate) {
+        navigator.vibrate(28);
+      }
       setTimeout(() => {
         onSwipe(direction === 'left' ? 'ai' : 'real');
       }, 260);
@@ -198,7 +208,7 @@ export default function SwipeCard({
       >
         <NextImage
           src={imageUrl}
-          alt="Unresolved visual record"
+          alt="Visual challenge"
           className={`absolute inset-0 h-full w-full select-none object-cover ${isInvestigating ? '' : 'image-breathe'}`}
           draggable={false}
           onError={() => setImageErrored(true)}
@@ -210,16 +220,17 @@ export default function SwipeCard({
             transform: isInvestigating ? 'scale(1.7)' : 'scale(1)',
             transition: isInvestigating ? 'transform 0.22s cubic-bezier(0.25, 1, 0.5, 1)' : 'transform 0.28s cubic-bezier(0.25, 1, 0.5, 1), transform-origin 0.2s ease-out',
             filter: isInvestigating ? 'brightness(0.95) contrast(1.02)' : '',
+            pointerEvents: 'none',
           }}
         />
 
         {imageErrored && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface px-8 text-center">
             <div>
-              <div className="font-sans text-[10px] font-light uppercase tracking-[0.18em] text-muted/50">
+              <div className="font-mono text-label font-light uppercase tracking-label text-muted/85">
                 {copy.errors.imageUnavailable}
               </div>
-              <div className="mt-3 text-sm font-sans font-light leading-relaxed text-muted/70">
+              <div className="mt-3 text-sm font-sans font-light leading-relaxed text-muted/95">
                 {copy.errors.imageUnavailableNote}
               </div>
             </div>
@@ -228,7 +239,7 @@ export default function SwipeCard({
 
         <div
           className="absolute inset-0 z-10 pointer-events-none"
-          style={{ background: `linear-gradient(to right, rgba(159,166,178,${realIntent * 0.02}), transparent 50%, rgba(184,84,76,${aiIntent * 0.03}))` }}
+          style={{ background: `linear-gradient(to right, rgba(152,142,144,${realIntent * 0.02}), transparent 50%, rgba(160,64,64,${aiIntent * 0.03}))` }}
         />
       </div>
     </div>

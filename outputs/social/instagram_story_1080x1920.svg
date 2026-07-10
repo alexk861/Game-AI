@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;600&amp;display=swap');
+      .brand { font-family: 'Outfit', sans-serif; font-weight: 200; font-size: 54px; letter-spacing: 0.4em; fill: #ffffff; text-anchor: middle; }
+      .kicker { font-family: 'Outfit', sans-serif; font-weight: 300; font-size: 24px; letter-spacing: 0.3em; fill: #c8963e; text-anchor: middle; text-transform: uppercase; }
+      .question { font-family: 'Outfit', sans-serif; font-weight: 300; font-size: 42px; letter-spacing: 0.12em; fill: #ffffff; text-anchor: middle; }
+      .sublabel { font-family: 'Outfit', sans-serif; font-weight: 200; font-size: 26px; letter-spacing: 0.2em; fill: #8a8d91; text-anchor: middle; text-transform: uppercase; }
+      .cta-url { font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 32px; letter-spacing: 0.15em; fill: #c8963e; text-anchor: middle; }
+      .card-bg { fill: #18191c; stroke: rgba(255,255,255,0.06); stroke-width: 2; }
+    </style>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1920" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0b0c0e"/>
+      <stop offset="100%" stop-color="#141619"/>
+    </linearGradient>
+    <clipPath id="imageClip">
+      <rect x="140" y="520" width="800" height="800" rx="4" />
+    </clipPath>
+  </defs>
+
+  <!-- Deep cinematic background -->
+  <rect width="1080" height="1920" fill="url(#bgGrad)" />
+
+  <!-- Subtle aesthetic accent line -->
+  <line x1="540" y1="120" x2="540" y2="220" stroke="#c8963e" stroke-width="2" opacity="0.3"/>
+
+  <!-- Brand Headers -->
+  <text x="560" y="320" class="brand">UNCANNY</text>
+  <text x="540" y="380" class="kicker">// DAILY PERCEPTION TEST</text>
+
+  <!-- Central Framed Teaser Card -->
+  <rect x="110" y="490" width="860" height="860" rx="6" class="card-bg" />
+  
+  <!-- Single teaser image (spoiler-free) -->
+  <g clip-path="url(#imageClip)">
+    <image href="https://images.unsplash.com/photo-1763644942208-5cbb0a9bc5cb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5NTM1MzB8MHwxfHNlYXJjaHwyMnx8c3VycmVhbCUyMGxhbmRzY2FwZXxlbnwwfDB8fHwxNzgwMjcyNTMwfDA&ixlib=rb-4.1.0&q=80&w=1080" x="140" y="520" width="800" height="800" preserveAspectRatio="xMidYMid slice" opacity="0.85"/>
+  </g>
+  
+  <!-- Subtle Vignette overlay inside card -->
+  <rect x="140" y="520" width="800" height="800" rx="4" fill="black" opacity="0.1" pointer-events="none" />
+
+  <!-- Question Core Text -->
+  <text x="540" y="1460" class="question">Can you tell real from AI?</text>
+  <text x="540" y="1520" class="sublabel">One of these five images is a trick.</text>
+
+  <!-- Bottom CTA Area -->
+  <rect x="190" y="1660" width="700" height="100" rx="3" fill="#18191c" stroke="rgba(200,150,62,0.2)" stroke-width="1.5"/>
+  <text x="540" y="1720" class="cta-url">UNCANNY.INFO/CHALLENGE</text>
+
+  <!-- Footnote -->
+  <text x="540" y="1830" font-family="'Outfit', sans-serif" font-weight="200" font-size="18" fill="rgba(255,255,255,0.2)" text-anchor="middle" letter-spacing="0.1em">SCAN INSTINCT • NO SIGNS REQUIRED</text>
+</svg>

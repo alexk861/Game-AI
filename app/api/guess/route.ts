@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { FALLBACK_CHALLENGES } from '@/lib/fallbackChallenges';
+import { calculateSlowBurnScore, calculateDecayScore, shouldRetireCandidate } from '@/lib/decayEngine';
 
 export const dynamic = 'force-dynamic';
 
@@ -173,7 +174,6 @@ export async function POST(request: NextRequest) {
             };
 
             // Compute scores using decay engine
-            const { calculateSlowBurnScore, calculateDecayScore, shouldRetireCandidate } = require('@/lib/decayEngine');
             const newSlowBurn = calculateSlowBurnScore(metricsPayload);
             const newDecay = calculateDecayScore(metricsPayload);
 

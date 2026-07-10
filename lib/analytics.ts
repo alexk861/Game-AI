@@ -1,4 +1,7 @@
-// ── GA4 Analytics Helper ──
+// ── GA4 & Native Firebase Analytics Helper ──
+
+import { FirebaseAnalytics } from '@capacitor-community/firebase-analytics';
+import { Capacitor } from '@capacitor/core';
 
 declare global {
   interface Window {
@@ -7,8 +10,19 @@ declare global {
 }
 
 export const track = (event: string, params?: Record<string, unknown>) => {
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('event', event, params);
+  // If running on a native platform (Android/iOS), route events to native Firebase Analytics
+  if (Capacitor.isNativePlatform()) {
+    FirebaseAnalytics.logEvent({
+      name: event,
+      params: params || {},
+    }).catch(err => {
+      console.error('[FirebaseAnalytics] Failed to log native event:', err);
+    });
+  } else {
+    // If running on web, fallback to the standard gtag.js implementation
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', event, params);
+    }
   }
 };
 
@@ -70,4 +84,37 @@ export const analytics = {
 
   anomalyCompletion: () =>
     track('anomaly_completion'),
+
+  shareModuleViewed: (score: number) =>
+    track('share_module_viewed', { score }),
+
+  shareNativeSuccess: (score: number) =>
+    track('share_native_success', { score }),
+
+  shareCopySuccess: (score: number) =>
+    track('share_copy_success', { score }),
+
+  shareFailed: (score: number) =>
+    track('share_failed', { score }),
+
+  challengeCleanLinkOpened: (setDate: string) =>
+    track('challenge_clean_link_opened', { set_date: setDate }),
+
+  challengeCompleted: (score: number, completionMs: number, setDate: string) =>
+    track('challenge_completed', { score, completion_ms: completionMs, set_date: setDate }),
+
+  challengeShareBackClicked: (score: number) =>
+    track('challenge_share_back_clicked', { score }),
+
+  challengeShareBackSuccess: (score: number) =>
+    track('challenge_share_back_success', { score }),
+
+  leaderboardViewed: (setDate: string) =>
+    track('leaderboard_viewed', { set_date: setDate }),
+
+  leaderboardSubmitted: (score: number, completionMs: number, setDate: string) =>
+    track('leaderboard_submitted', { score, completion_ms: completionMs, set_date: setDate }),
+
+  socialTeaserAssetGenerated: (setDate: string) =>
+    track('social_teaser_asset_generated', { set_date: setDate }),
 };

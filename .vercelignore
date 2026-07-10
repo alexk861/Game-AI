@@ -1,0 +1,10 @@
+# Exclude native Android build artifacts and intermediate caches from web uploads
+android/
+.next/
+node_modules/
+out/
+.antigravity/
+.git/
+*.log
+*.txt
+*.apk.map

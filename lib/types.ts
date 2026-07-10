@@ -15,6 +15,11 @@ export interface GuessResult {
   answer?: 'ai' | 'real';
   imageUrl?: string;
   reasoningTag?: string;
+  guesses_ai?: number;
+  guesses_real?: number;
+  unsplash_url?: string | null;
+  photographer_name?: string | null;
+  context_short?: string | null;
 }
 
 export interface DailySetResponse {
@@ -41,6 +46,7 @@ export interface GuessResponse {
 }
 
 export interface UncannyStorage {
+  deviceId?: string;
   todayDate: string;
   todayStarted: boolean;
   todayStartedAt: number | null;
@@ -62,6 +68,16 @@ export interface UncannyStorage {
   reflectionLevel?: number;
   reflectionUnlockCountToday?: number;
   lastReflectionUnlockAt?: string | null;
+  todaySeed?: string;
+  reflectionSeed?: string;
+  seenImageUrls?: string[];
+  seenChallengeIds?: string[];
+  seenParentIds?: string[];
+  seenAtByImageUrl?: Record<string, string>;
+  seenLog?: Array<{ imageUrl: string; challengeId: string; parentId?: string; seenAt: string }>;
+  activeExtraChallenges?: Challenge[];
+  activeExtraResults?: GuessResult[];
+  extraSeed?: string;
 }
 
 export type GamePhase =

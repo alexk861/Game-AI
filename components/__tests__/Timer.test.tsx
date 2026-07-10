@@ -9,22 +9,24 @@ describe('Timer Component', () => {
     expect(screen.getByText(/10s/i)).toBeInTheDocument();
   });
 
-  it('renders neutral color progression initially', () => {
+  it('renders the neutral ring color initially', () => {
     const { container } = render(<Timer duration={10} running={false} onExpire={() => {}} />);
-    const timerBar = container.querySelector('.timer-bar') as HTMLElement;
-    expect(timerBar).toHaveStyle('background-color: var(--outline)');
+    const ring = container.querySelector('[data-testid="timer-ring"]') as HTMLElement;
+    expect(ring.style.background).toContain('var(--text)');
+    expect(ring.style.background).not.toContain('var(--wrong)');
   });
 
-  it('transitions quietly to amber when time is under 4s', () => {
+  it('shifts the ring to unstable red when time is under 4s', () => {
     const { container } = render(<Timer duration={3} running={false} onExpire={() => {}} />);
-    const timerBar = container.querySelector('.timer-bar') as HTMLElement;
-    expect(timerBar).toHaveStyle('background-color: var(--accent-amber)');
+    const ring = container.querySelector('[data-testid="timer-ring"]') as HTMLElement;
+    expect(ring.style.background).toContain('var(--wrong)');
   });
 
-  it('transitions quietly to muted red when time is under 2s', () => {
+  it('keeps the ring red when time is under 2s (no amber tier)', () => {
     const { container } = render(<Timer duration={1} running={false} onExpire={() => {}} />);
-    const timerBar = container.querySelector('.timer-bar') as HTMLElement;
-    expect(timerBar).toHaveStyle('background-color: var(--error)');
+    const ring = container.querySelector('[data-testid="timer-ring"]') as HTMLElement;
+    expect(ring.style.background).toContain('var(--wrong)');
+    expect(ring.style.background).not.toContain('var(--accent-amber)');
   });
 
   it('does not have any pulsing or shaking style attributes or classes', () => {

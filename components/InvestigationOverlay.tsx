@@ -15,8 +15,8 @@ export default function InvestigationOverlay({ visible }: InvestigationOverlayPr
       
       {/* Single quiet, minimal indicator block in the center-bottom */}
       <div className="absolute bottom-[28%] text-center fade-in">
-        <div className="font-sans text-[10px] font-light uppercase tracking-[0.24em] text-foreground/50">
-          {copy.investigation.fragments[0]}
+        <div className="font-mono text-label font-light uppercase tracking-kicker text-foreground/85">
+          <span className="bg-background/60 px-2 py-0.5">{copy.investigation.fragments[0]}</span>
         </div>
       </div>
     </div>

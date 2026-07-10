@@ -1,0 +1,295 @@
+{
+  "agent1": {
+    "pass": true,
+    "isCopiedLabel": false,
+    "exploreOffset": true,
+    "shareText": "UNCANNY\r\n\r\nI scored 3/5 today.\r\nCan you tell real from AI?\r\n\r\n▣ ▣ ▣ ☒ ☒\r\n\r\nPlay the same set:\r\nhttps://www.uncanny.info/challenge/2026-06-02",
+    "dailyImages": [
+      "https://images.unsplash.com/photo-1763644942208-5cbb0a9bc5cb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5NTM1MzB8MHwxfHNlYXJjaHwyMnx8c3VycmVhbCUyMGxhbmRzY2FwZXxlbnwwfDB8fHwxNzgwMjcyNTMwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "https://images.unsplash.com/photo-1638989597115-0fe0d146eb23?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5NTM1MzB8MHwxfHNlYXJjaHwyMXx8bWFjcm8lMjBpbnNlY3R8ZW58MHwwfHx8MTc4MDE4ODk2Mnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "https://images.unsplash.com/photo-1770320742275-2ad1714ab774?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5NTM1MzB8MHwxfHNlYXJjaHwyNXx8d2VpcmQlMjBzY2llbmNlfGVufDB8MHx8fDE3ODAyNzI1MzV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "https://udbaxpyzurywekllytgd.supabase.co/storage/v1/object/public/challenge-images/ai-generated/2026-06-02/31b909cc-e53d-460e-bbc4-eac7c01471b3.jpg",
+      "https://udbaxpyzurywekllytgd.supabase.co/storage/v1/object/public/challenge-images/ai-generated/2026-06-02/99ecb293-8ffe-4344-84b7-d479b7934467.jpg"
+    ],
+    "analyticsEvents": [
+      {
+        "eventName": "session_started",
+        "params": {
+          "set_date": "2026-06-02"
+        }
+      },
+      {
+        "eventName": "challenge_started",
+        "params": {
+          "challenge_id": "a6b3c726-036b-4d80-99f4-dac08bafb389",
+          "set_order": 1,
+          "difficulty": 1
+        }
+      },
+      {
+        "eventName": "guess_submitted",
+        "params": {
+          "challenge_id": "a6b3c726-036b-4d80-99f4-dac08bafb389",
+          "guess": "real",
+          "correct": true,
+          "time_remaining": 11.816
+        }
+      },
+      {
+        "eventName": "result_correct",
+        "params": {
+          "challenge_id": "a6b3c726-036b-4d80-99f4-dac08bafb389",
+          "set_order": 1,
+          "difficulty": 1
+        }
+      },
+      {
+        "eventName": "challenge_revealed",
+        "params": {
+          "challenge_id": "a6b3c726-036b-4d80-99f4-dac08bafb389",
+          "correct": true
+        }
+      },
+      {
+        "eventName": "challenge_started",
+        "params": {
+          "challenge_id": "35ab9266-4e78-4a7e-9ca4-428e7885c7a1",
+          "set_order": 2,
+          "difficulty": 2
+        }
+      },
+      {
+        "eventName": "guess_submitted",
+        "params": {
+          "challenge_id": "35ab9266-4e78-4a7e-9ca4-428e7885c7a1",
+          "guess": "real",
+          "correct": true,
+          "time_remaining": 11.418
+        }
+      },
+      {
+        "eventName": "result_correct",
+        "params": {
+          "challenge_id": "35ab9266-4e78-4a7e-9ca4-428e7885c7a1",
+          "set_order": 2,
+          "difficulty": 2
+        }
+      },
+      {
+        "eventName": "challenge_revealed",
+        "params": {
+          "challenge_id": "35ab9266-4e78-4a7e-9ca4-428e7885c7a1",
+          "correct": true
+        }
+      },
+      {
+        "eventName": "challenge_started",
+        "params": {
+          "challenge_id": "8db439ae-4fc8-4613-a492-0b9255ea9f0d",
+          "set_order": 3,
+          "difficulty": 3
+        }
+      },
+      {
+        "eventName": "guess_submitted",
+        "params": {
+          "challenge_id": "8db439ae-4fc8-4613-a492-0b9255ea9f0d",
+          "guess": "real",
+          "correct": true,
+          "time_remaining": 11.401
+        }
+      },
+      {
+        "eventName": "result_correct",
+        "params": {
+          "challenge_id": "8db439ae-4fc8-4613-a492-0b9255ea9f0d",
+          "set_order": 3,
+          "difficulty": 3
+        }
+      },
+      {
+        "eventName": "challenge_revealed",
+        "params": {
+          "challenge_id": "8db439ae-4fc8-4613-a492-0b9255ea9f0d",
+          "correct": true
+        }
+      },
+      {
+        "eventName": "challenge_started",
+        "params": {
+          "challenge_id": "711c1a6d-2059-426f-8417-8e34f8776a8a",
+          "set_order": 4,
+          "difficulty": 4
+        }
+      },
+      {
+        "eventName": "guess_submitted",
+        "params": {
+          "challenge_id": "711c1a6d-2059-426f-8417-8e34f8776a8a",
+          "guess": "real",
+          "correct": false,
+          "time_remaining": 11.399000000000001
+        }
+      },
+      {
+        "eventName": "result_wrong",
+        "params": {
+          "challenge_id": "711c1a6d-2059-426f-8417-8e34f8776a8a",
+          "set_order": 4,
+          "difficulty": 4
+        }
+      },
+      {
+        "eventName": "challenge_revealed",
+        "params": {
+          "challenge_id": "711c1a6d-2059-426f-8417-8e34f8776a8a",
+          "correct": false
+        }
+      },
+      {
+        "eventName": "challenge_started",
+        "params": {
+          "challenge_id": "aac655ce-fdd7-4020-8b11-1fa276d71850",
+          "set_order": 5,
+          "difficulty": 5
+        }
+      },
+      {
+        "eventName": "guess_submitted",
+        "params": {
+          "challenge_id": "aac655ce-fdd7-4020-8b11-1fa276d71850",
+          "guess": "real",
+          "correct": false,
+          "time_remaining": 11.418
+        }
+      },
+      {
+        "eventName": "result_wrong",
+        "params": {
+          "challenge_id": "aac655ce-fdd7-4020-8b11-1fa276d71850",
+          "set_order": 5,
+          "difficulty": 5
+        }
+      },
+      {
+        "eventName": "challenge_revealed",
+        "params": {
+          "challenge_id": "aac655ce-fdd7-4020-8b11-1fa276d71850",
+          "correct": false
+        }
+      },
+      {
+        "eventName": "set_completed",
+        "params": {
+          "score": 3,
+          "streak": 1,
+          "set_date": "2026-06-02"
+        }
+      },
+      {
+        "eventName": "share_module_viewed",
+        "params": {
+          "score": 3
+        }
+      },
+      {
+        "eventName": "share_tapped",
+        "params": {
+          "score": 3,
+          "method": "copy"
+        }
+      },
+      {
+        "eventName": "share_copy_success",
+        "params": {
+          "score": 3
+        }
+      },
+      {
+        "eventName": "share_copy_success",
+        "params": {
+          "score": 3
+        }
+      }
+    ],
+    "screenshot": "agent1-results.png",
+    "bugs": [],
+    "severity": "NONE"
+  },
+  "agent2": {
+    "pass": true,
+    "challengeUrl": "https://www.uncanny.info/challenge/2026-06-02",
+    "imagesParity": true,
+    "storageIsolationPass": true,
+    "sendbackText": "UNCANNY\r\n\r\nI played your challenge and scored 3/5.\r\nCan you beat this?\r\n\r\n▣ ▣ ▣ ☒ ☒\r\n\r\nPlay the same set:\r\nhttps://www.uncanny.info/challenge/2026-06-02",
+    "screenshot": "agent2-results.png",
+    "bugs": [],
+    "severity": "NONE"
+  },
+  "agent4": {
+    "pass": true,
+    "homepageMeta": {
+      "title": "UNCANNY — Daily Perception Game",
+      "description": "UNCANNY is a daily perception game where you decide whether images are real or AI.",
+      "ogTitle": "UNCANNY — Daily Perception Game",
+      "ogDesc": "UNCANNY is a daily perception game where you decide whether images are real or AI.",
+      "ogImage": "https://www.uncanny.info/og-preview.png",
+      "twitterCard": "summary_large_image",
+      "twitterImage": "https://www.uncanny.info/og-preview.png"
+    },
+    "challengeMeta": {
+      "title": "UNCANNY — Can you beat this set?",
+      "description": "A friend challenged you to play the same Real or AI image set.",
+      "ogTitle": "Can you tell real from AI?",
+      "ogDesc": "Play the same UNCANNY set and compare your score.",
+      "ogImage": "https://www.uncanny.info/og-preview.png"
+    },
+    "ogImageStatus": 200,
+    "bugs": [],
+    "severity": "NONE"
+  },
+  "agent5": {
+    "pass": true,
+    "hasChallengeBtn": false,
+    "hasLeaderboard": false,
+    "hasLeaderboardForm": false,
+    "screenshot": "agent5-fallback-results.png",
+    "bugs": [],
+    "severity": "NONE"
+  },
+  "agent6": {
+    "pass": true,
+    "responseStatus": 400,
+    "bugs": [],
+    "severity": "NONE"
+  },
+  "agent7": {
+    "pass": true,
+    "dailyUrlsCount": 5,
+    "extraUrlsCount": 3,
+    "overlapCount": 0,
+    "inExtraPhase": true,
+    "bugs": [],
+    "severity": "NONE"
+  },
+  "agent8": {
+    "pass": true,
+    "filesExist": true,
+    "isSpoilerFree": true,
+    "captionSample": "UNCANNY — Daily Perception Test // 2026-06-02\n\nOne of these five images is a trick. A camera captured most. A generator calculated others. \n\nCan your eyes tell real from AI, or will you be fooled?",
+    "bugs": [],
+    "severity": "NONE"
+  },
+  "agent9": {
+    "pass": true,
+    "violations": [],
+    "bugs": [],
+    "severity": "NONE"
+  },
+  "agent10": {
+    "pass": true,
+    "overflow": false,
+    "bugs": [],
+    "severity": "NONE"
+  }
+}

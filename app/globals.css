@@ -3,28 +3,43 @@
 /* Uncanny Design System (Stitch-aligned) */
 
 :root {
-  --bg: #1f2126;
-  --surface: #282a30;
-  --surface-container: #303239;
-  --surface-container-low: #23252b;
-  --surface-container-lowest: #1b1c21;
-  --surface-variant: #383b45;
-  --text: #f0ece9;
-  --text-muted: #abb1bd;
-  --on-surface: #f0ece9;
-  --on-surface-variant: #cfc4c5;
-  --outline: rgba(240, 236, 233, 0.12);
-  --outline-variant: rgba(255, 255, 255, 0.03);
+  /* ── DESIGN.md primitives ── */
+  --archive-black: #131313;   /* primary background */
+  --burnt-surface: #201f1f;   /* panels / overlays */
+  --evidence-text: #cfc4c5;   /* body + muted text */
+  --instrument: #988e90;      /* borders, neutral status, REAL */
+  --unstable-red: #a04040;    /* AI, wrong, tension, error */
+  --border-dim: #3a3637;      /* structural dividers, low-emphasis panels */
+
+  /* ── semantic roles (names kept stable for components) ── */
+  --bg: var(--archive-black);
+  --surface: var(--burnt-surface);
+  --text: var(--evidence-text);
+  --text-muted: #8e8687;
+  --outline: var(--instrument);
+  --outline-variant: var(--border-dim);
+  --primary: var(--evidence-text);
+  --error: var(--unstable-red);
+  --on-error: var(--archive-black);
+
+  /* decision / verdict semantics — REAL is quiet gray, AI/wrong is red. Never green. */
+  --real-accent: var(--instrument);
+  --ai-accent: var(--unstable-red);
+  --correct: var(--instrument);
+  --wrong: var(--unstable-red);
+
+  /* ── legacy aliases: keep out-of-scope screens (leaderboard/profile/landing)
+        compiling. --accent-amber is for marketing pages ONLY — it must not
+        appear in game components. ── */
+  --surface-container: #262424;
+  --surface-container-low: #1b1a1a;
+  --surface-container-lowest: #171616;
+  --surface-variant: #2c2a2a;
+  --on-surface: var(--evidence-text);
+  --on-surface-variant: var(--evidence-text);
+  --signal-dim: #6f6869;
+  --signal-cold: #8e8687;
   --accent-amber: #c8963e;
-  --error: #ffb4ab;
-  --on-error: #690005;
-  --primary: #f0ece9;
-  --signal-dim: #707580;
-  --signal-cold: #abb1bd;
-  --correct: #8ba88f;
-  --wrong: #b8544c;
-  --ai-accent: #b8544c;
-  --real-accent: #abb1bd;
 }
 
 @theme inline {
@@ -47,8 +62,25 @@
   --color-wrong: var(--wrong);
   --color-ai: var(--ai-accent);
   --color-real: var(--real-accent);
+  --color-accent-amber: var(--accent-amber);
+  --color-border-dim: var(--border-dim);
+  --font-sans: "Geist", sans-serif;
   --font-body: "Geist", sans-serif;
   --font-mono: "Space Mono", monospace;
+
+  /* type scale — replaces text-[8px]…text-[12px] one-offs */
+  --text-label: 0.625rem;
+  --text-label--line-height: 1.4;
+  --text-label-lg: 0.75rem;
+  --text-label-lg--line-height: 1.4;
+  --text-display: 3.5rem;
+  --text-display--line-height: 1;
+
+  /* tracking scale — replaces tracking-[0.1em]…tracking-[0.28em] one-offs.
+     Named to avoid colliding with Tailwind's built-in tracking-wide/wider/widest. */
+  --tracking-caps: 0.12em;
+  --tracking-label: 0.18em;
+  --tracking-kicker: 0.25em;
 }
 
 * {
@@ -58,12 +90,13 @@
 
 html,
 body {
-  height: 100dvh;
+  min-height: 100dvh;
   margin: 0;
-  overflow: hidden;
+  overflow-x: hidden;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
+  line-height: 1.6; /* Typographic standard for editorial dark mode */
   touch-action: manipulation;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -92,7 +125,7 @@ a {
   background-image: url("/noise.png");
   background-repeat: repeat;
   mix-blend-mode: overlay;
-  opacity: 0.005;
+  opacity: 0.03;
   pointer-events: none;
   z-index: 5;
 }
@@ -102,8 +135,9 @@ a {
   inset: 0;
   pointer-events: none;
   z-index: 100;
-  opacity: 0.005;
-  background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCec2ElU7HwcABnnmnNxIdlBptr9WnRc4vdiEB0DrD66yd4HZSqHlNgwMu4cJeaFNSQGOKKCC3Fc1dxIHfm2rgcpSzoMLXbzc0q2yseOgclYbLho44KoBEljJ5QJ3kYHNQrj3uQ_sItSUvR4_A7F5p4EuG3Iyi7iJzun7RuNBM3ctqSVPL4aJheWtuZ3tcHAJEpx00qGlJ0B9KlzEl8lFenfsc4vUkYMJg7sosHHQkWswGPg50gftgURg2Jm4lqLNjduOOTHGR98_Kj");
+  opacity: 0.03;
+  background-image: url("/noise.png");
+  background-repeat: repeat;
   animation: globalInstability 12s ease-in-out infinite alternate;
 }
 
@@ -174,34 +208,6 @@ a {
 
 .investigation-pulse {
   animation: investigationPulse 1.8s ease-in-out infinite alternate;
-}
-
-.swipe-card {
-  transition: transform 0.2s ease-out, opacity 0.22s ease-out;
-  will-change: transform;
-  touch-action: none;
-}
-
-.swipe-card-exit-left {
-  animation: swipeLeft 0.62s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-.swipe-card-exit-right {
-  animation: swipeRight 0.62s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-@keyframes swipeLeft {
-  to {
-    transform: translateX(-112%) rotate(-3deg);
-    opacity: 0;
-  }
-}
-
-@keyframes swipeRight {
-  to {
-    transform: translateX(112%) rotate(3deg);
-    opacity: 0;
-  }
 }
 
 .reveal-flash {
@@ -327,42 +333,15 @@ a {
   }
 }
 
-.btn-ghost {
-  border: 1px solid var(--outline);
-  background: transparent;
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 400;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  transition: background-color 120ms linear, color 120ms linear;
-  cursor: pointer;
-}
-
-.btn-ghost:hover {
-  background: var(--text);
-  color: var(--bg);
-}
-
-.btn-ghost:active {
-  transform: translateY(1px);
-}
-
-.btn-ghost:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
 .archive-bg {
   background-color: var(--bg);
   background-image:
-    linear-gradient(180deg, rgba(160, 64, 64, 0.09), transparent 34%),
+    linear-gradient(180deg, color-mix(in oklab, var(--unstable-red) 9%, transparent), transparent 34%),
     linear-gradient(0deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0));
 }
 
 .archive-panel {
-  background: rgba(32, 31, 31, 0.78);
+  background: color-mix(in oklab, var(--burnt-surface) 78%, transparent);
   border: 1px solid var(--outline-variant);
 }
 
@@ -553,6 +532,8 @@ a {
 }
 
 .btn-ghost:active {
+  background: var(--text);
+  color: var(--bg);
   transform: scale(0.97);
 }
 
