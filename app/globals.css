@@ -104,19 +104,24 @@ body {
   -webkit-user-select: none;
 }
 
-button,
-input,
-textarea,
-select {
-  border-radius: 0;
-}
+/* Element defaults live in the base layer so Tailwind utilities can override
+   them — un-layered rules would silently beat utility classes (e.g. a Link
+   with text-background staying the inherited color). */
+@layer base {
+  button,
+  input,
+  textarea,
+  select {
+    border-radius: 0;
+  }
 
-button {
-  font: inherit;
-}
+  button {
+    font: inherit;
+  }
 
-a {
-  color: inherit;
+  a {
+    color: inherit;
+  }
 }
 
 .noise-overlay {

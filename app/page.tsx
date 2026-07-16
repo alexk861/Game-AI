@@ -20,6 +20,13 @@ export const metadata: Metadata = {
   },
 };
 
+const HOW_IT_WORKS = [
+  { icon: 'search', title: '1. Look', desc: 'Study the image.' },
+  { icon: 'swipe', title: '2. Decide', desc: 'Choose Real or AI.' },
+  { icon: 'groups', title: '3. Compare', desc: 'See how other players answered.' },
+  { icon: 'calendar_today', title: '4. Return Tomorrow', desc: 'A new set arrives every day.' },
+];
+
 export default function HomeLandingPage() {
   const screenshots = [
     {
@@ -72,77 +79,74 @@ export default function HomeLandingPage() {
         }}
       />
 
-      {/* Subtle, restrained gold background glow (Max opacity 0.04) */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(245,158,11,0.04),rgba(255,255,255,0))] pointer-events-none" />
+      {/* Subtle, restrained unstable-red pressure at the top (max opacity 0.04) */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(160,64,64,0.04),rgba(255,255,255,0))] pointer-events-none" />
       <div className="noise-overlay pointer-events-none absolute inset-0 opacity-[0.01]" />
 
       {/* ── Navigation ── */}
-      <header className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 md:px-16 py-4 bg-background/95 backdrop-blur-md border-b border-outline/10 shadow-lg">
+      <header className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 md:px-16 py-4 bg-background/95 backdrop-blur-md border-b border-border-dim">
         <Link href="/" className="flex items-center gap-3 group">
-          <UncannyLogo size={24} className="text-accent-amber group-hover:scale-105 transition-transform" />
-          <span className="text-xl md:text-2xl font-bold tracking-[0.15em] text-foreground">UNCANNY</span>
+          <UncannyLogo size={24} className="text-foreground group-hover:opacity-80 transition-opacity" />
+          <span className="text-xl md:text-2xl font-bold tracking-label text-foreground">UNCANNY</span>
         </Link>
         <MobileNav />
       </header>
 
       {/* ── Hero Section ── */}
       <section className="relative pt-36 pb-16 px-6 max-w-4xl mx-auto flex flex-col items-center text-center">
-        {/* Simple live indicator */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface border border-accent-amber/20 mb-8">
-          <span className="flex h-1.5 w-1.5 rounded-full bg-accent-amber" />
-          <span className="font-sans text-[10px] uppercase tracking-wider text-muted font-bold">Today&apos;s challenge is live</span>
+        {/* Live indicator — quiet archival chip */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-surface border border-border-dim mb-8">
+          <span className="flex h-1.5 w-1.5 bg-wrong animate-pulse" />
+          <span className="font-mono text-label uppercase tracking-label text-muted">Today&apos;s challenge is live</span>
         </div>
 
         {/* Clear, human mixed-case headline */}
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-none text-foreground max-w-3xl">
-          Can you tell real from AI?
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tight leading-[1.05] text-foreground max-w-3xl">
+          Can you tell real from <span className="text-wrong">AI</span>?
         </h1>
-        
+
         {/* High-conversion target sentence */}
-        <p className="mt-6 text-sm md:text-base text-accent-amber font-sans font-bold max-w-xl">
+        <p className="mt-6 text-sm md:text-base text-foreground/95 font-sans font-normal max-w-xl">
           UNCANNY is a daily game where you decide whether images are real or AI.
         </p>
 
-        <div className="mt-6 text-lg sm:text-xl md:text-2xl max-w-2xl text-muted font-light leading-relaxed space-y-1">
-          <p>Five images.</p>
-          <p>Twelve seconds each.</p>
-          <p>A new challenge every day.</p>
+        <div className="mt-6 font-mono text-label-lg uppercase tracking-label max-w-2xl text-muted space-y-1.5">
+          <p>Five images · Twelve seconds each</p>
+          <p>A new challenge every day</p>
         </div>
 
-        {/* Dynamic CTAs - Restrained with no glowing or pulsing animations */}
+        {/* CTAs — one dominant action, one quiet secondary */}
         <div className="mt-10 flex flex-col sm:flex-row gap-4 w-full max-w-md justify-center items-center">
           <Link
             href="/game"
-            className="w-full sm:w-auto bg-accent-amber hover:bg-accent-amber/90 text-background font-bold py-4 px-8 text-center text-sm tracking-wider transition-all rounded-[3px] shadow-xl hover:scale-[1.01] active:scale-[0.98]"
-            style={{ color: 'var(--bg)' }}
+            className="w-full sm:w-auto min-h-14 flex items-center justify-center whitespace-nowrap bg-primary text-background font-mono font-medium py-4 px-10 text-center text-label-lg uppercase tracking-caps transition-all hover:bg-primary/90 active:bg-primary/90 active:scale-[0.985]"
           >
             Play Now
           </Link>
           <a
             href="/uncanny-debug.apk"
             download="uncanny-debug.apk"
-            className="w-full sm:w-auto bg-surface hover:bg-surface-container border border-outline/10 text-foreground py-4 px-8 text-center text-sm font-semibold tracking-wider transition-all rounded-[3px] flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.98]"
-            style={{ borderColor: 'var(--outline)', color: 'var(--text)' }}
+            className="w-full sm:w-auto min-h-14 bg-transparent border border-outline/60 hover:border-outline active:border-outline text-foreground py-4 px-6 text-center font-mono text-label-lg uppercase tracking-caps transition-all flex items-center justify-center gap-2 whitespace-nowrap active:scale-[0.985]"
           >
             <span>Download Android App</span>
-            <span className="text-[10px] text-accent-amber font-mono">(26.6 MB)</span>
+            <span className="text-label text-muted">(16 MB)</span>
           </a>
         </div>
-        
-        <p className="mt-4 text-xs text-muted/60 font-sans">
+
+        <p className="mt-4 font-mono text-label uppercase tracking-label text-muted/60">
           No account needed.
         </p>
       </section>
 
       {/* ── Split Card Swipe Graphics (Non-face scenes only) ── */}
       <section className="pb-20 px-6 max-w-2xl mx-auto">
-        <div className="relative aspect-[16/10] w-full rounded-[4px] overflow-hidden border border-outline/15 bg-surface shadow-2xl flex items-center justify-center">
+        <div className="relative aspect-[16/10] w-full overflow-hidden border border-border-dim bg-surface flex items-center justify-center">
           {/* Subtle grid backdrop */}
           <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--outline-variant)_1px,transparent_1px),linear-gradient(to_bottom,var(--outline-variant)_1px,transparent_1px)] bg-[size:24px_24px] opacity-10" />
 
           {/* Left half: AI generated scene (no faces) */}
-          <div className="absolute inset-y-0 left-0 w-1/2 overflow-hidden bg-surface-container-lowest/95 border-r-2 border-accent-amber/50">
-            <div className="absolute top-4 left-4 bg-wrong/20 border border-wrong/40 px-2.5 py-1 rounded-[3px] text-[9px] font-sans text-wrong uppercase tracking-wider font-bold">
+          <div className="absolute inset-y-0 left-0 w-1/2 overflow-hidden bg-surface-container-lowest/95 border-r border-border-dim">
+            <div className="absolute top-4 left-4 z-10 bg-background/70 border border-wrong px-2.5 py-1 font-mono text-label text-wrong uppercase tracking-label font-bold">
               AI
             </div>
             {/* Image Split Left */}
@@ -153,7 +157,7 @@ export default function HomeLandingPage() {
 
           {/* Right half: Real Photography scene (no faces) */}
           <div className="absolute inset-y-0 right-0 w-1/2 overflow-hidden bg-background/95">
-            <div className="absolute top-4 right-4 bg-correct/20 border border-correct/40 px-2.5 py-1 rounded-[3px] text-[9px] font-sans text-correct uppercase tracking-wider font-bold">
+            <div className="absolute top-4 right-4 z-10 bg-background/70 border border-real px-2.5 py-1 font-mono text-label text-real uppercase tracking-label font-bold">
               Real
             </div>
             {/* Image Split Right */}
@@ -164,103 +168,77 @@ export default function HomeLandingPage() {
 
           {/* Swipe Indicator Handle */}
           <div className="absolute z-20 flex flex-col items-center justify-center pointer-events-none">
-            <div className="bg-accent-amber text-background px-4 py-2 font-sans text-xs uppercase font-extrabold tracking-widest rounded-full shadow-2xl flex items-center gap-1.5 border-2 border-foreground">
-              <span>◀</span>
+            <div className="bg-primary text-background px-4 py-2 font-mono text-label uppercase font-bold tracking-label flex items-center gap-2">
+              <span className="material-symbols-outlined text-sm leading-none" aria-hidden="true">swipe</span>
               <span>Swipe to decide</span>
-              <span>▶</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── How It Works (4 Simple, restrained, readable cards) ── */}
-      <section id="how-it-works" className="py-20 bg-surface-container-low/40 border-y border-outline/10 px-6">
+      {/* ── How It Works (4 restrained archival panels) ── */}
+      <section id="how-it-works" className="py-20 bg-surface/40 border-y border-border-dim px-6">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-extrabold text-center text-foreground mb-12 uppercase tracking-wide">
+          <div className="text-center mb-3 font-mono text-label uppercase tracking-kicker text-muted/70">
+            // The Ritual
+          </div>
+          <h2 className="text-2xl md:text-3xl font-light text-center text-foreground mb-12 uppercase tracking-label">
             How It Works
           </h2>
-          
-          <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-4">
-            {/* Card 1 */}
-            <div className="p-6 bg-surface border border-outline/10 rounded-[4px] flex flex-col items-center text-center shadow-lg hover:border-accent-amber/30 transition-colors">
-              <div className="w-12 h-12 rounded-full bg-accent-amber/10 border border-accent-amber/30 flex items-center justify-center mb-6">
-                <span className="text-accent-amber font-bold text-lg">🔍</span>
-              </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">1. Look</h3>
-              <p className="text-xs text-muted leading-relaxed font-light">
-                Study the image.
-              </p>
-            </div>
 
-            {/* Card 2 */}
-            <div className="p-6 bg-surface border border-outline/10 rounded-[4px] flex flex-col items-center text-center shadow-lg hover:border-accent-amber/30 transition-colors">
-              <div className="w-12 h-12 rounded-full bg-accent-amber/10 border border-accent-amber/30 flex items-center justify-center mb-6">
-                <span className="text-accent-amber font-bold text-lg">↔️</span>
+          <div className="grid gap-px sm:grid-cols-2 md:grid-cols-4 bg-border-dim border border-border-dim">
+            {HOW_IT_WORKS.map((step) => (
+              <div key={step.title} className="p-6 bg-surface flex flex-col items-center text-center">
+                <div className="w-12 h-12 border border-border-dim flex items-center justify-center mb-6">
+                  <span className="material-symbols-outlined text-foreground/90" style={{ fontVariationSettings: "'wght' 200" }} aria-hidden="true">
+                    {step.icon}
+                  </span>
+                </div>
+                <h3 className="font-mono text-label-lg uppercase tracking-caps font-bold text-foreground mb-2">{step.title}</h3>
+                <p className="text-xs text-muted leading-relaxed font-light">
+                  {step.desc}
+                </p>
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">2. Decide</h3>
-              <p className="text-xs text-muted leading-relaxed font-light">
-                Choose Real or AI.
-              </p>
-            </div>
-
-            {/* Card 3 */}
-            <div className="p-6 bg-surface border border-outline/10 rounded-[4px] flex flex-col items-center text-center shadow-lg hover:border-accent-amber/30 transition-colors">
-              <div className="w-12 h-12 rounded-full bg-accent-amber/10 border border-accent-amber/30 flex items-center justify-center mb-6">
-                <span className="text-accent-amber font-bold text-lg">📊</span>
-              </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">3. Compare</h3>
-              <p className="text-xs text-muted leading-relaxed font-light">
-                See how other players answered.
-              </p>
-            </div>
-
-            {/* Card 4 */}
-            <div className="p-6 bg-surface border border-outline/10 rounded-[4px] flex flex-col items-center text-center shadow-lg hover:border-accent-amber/30 transition-colors">
-              <div className="w-12 h-12 rounded-full bg-accent-amber/10 border border-accent-amber/30 flex items-center justify-center mb-6">
-                <span className="text-accent-amber font-bold text-lg">📅</span>
-              </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">4. Return Tomorrow</h3>
-              <p className="text-xs text-muted leading-relaxed font-light">
-                A new set arrives every day.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ── Daily Streak Loop ── */}
       <section className="py-20 px-6 max-w-4xl mx-auto text-center">
-        <h2 className="text-2xl md:text-3xl font-extrabold text-foreground mb-6 uppercase tracking-wide">
+        <h2 className="text-2xl md:text-3xl font-light text-foreground mb-6 uppercase tracking-label">
           Play in Under 2 Minutes
         </h2>
         <p className="text-sm md:text-base text-muted max-w-xl mx-auto leading-relaxed font-light mb-12">
           Keep it short, simple, and daily. Test your eye against the daily set, protect your streak, and see how you stack up globally.
         </p>
 
-        {/* Micro Streak Counter UI */}
-        <div className="bg-surface border border-outline/10 rounded-[4px] max-w-sm mx-auto shadow-xl flex items-center justify-between p-6">
+        {/* Micro Streak Counter UI — mirrors the in-game streak squares */}
+        <div className="bg-surface border border-border-dim max-w-sm mx-auto flex items-center justify-between p-6">
           <div className="text-left">
-            <span className="block font-sans text-[10px] uppercase tracking-wider text-accent-amber font-bold">Daily Streak</span>
-            <span className="text-2xl font-black text-foreground mt-1 block">5 DAYS ACTIVE</span>
+            <span className="block font-mono text-label uppercase tracking-label text-muted">Daily Streak</span>
+            <span className="text-2xl font-light text-foreground mt-1 block">5 DAYS ACTIVE</span>
           </div>
-          <div className="text-4xl">
-            🔥
+          <div className="flex items-center gap-1.5" aria-hidden="true">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <span key={i} className="block h-2 w-2 bg-outline" />
+            ))}
           </div>
         </div>
 
-        {/* Wordle-style 5 boxes */}
-        <div className="flex justify-center gap-3 mt-10">
-          <div className="w-10 h-10 border-2 border-correct bg-correct/15 text-correct font-bold rounded-[4px] flex items-center justify-center">☑</div>
-          <div className="w-10 h-10 border-2 border-correct bg-correct/15 text-correct font-bold rounded-[4px] flex items-center justify-center">☑</div>
-          <div className="w-10 h-10 border-2 border-wrong bg-wrong/15 text-wrong font-bold rounded-[4px] flex items-center justify-center">☒</div>
-          <div className="w-10 h-10 border-2 border-correct bg-correct/15 text-correct font-bold rounded-[4px] flex items-center justify-center">☑</div>
-          <div className="w-10 h-10 border-2 border-outline/20 bg-transparent text-muted font-bold rounded-[4px] flex items-center justify-center">5</div>
+        {/* Wordle-style result marks — same glyphs as the in-game share block */}
+        <div className="flex justify-center gap-3 mt-10 font-mono text-xl" aria-label="Example daily result: three correct, one wrong, one remaining">
+          <div className="w-10 h-10 border border-real text-real flex items-center justify-center">▣</div>
+          <div className="w-10 h-10 border border-real text-real flex items-center justify-center">▣</div>
+          <div className="w-10 h-10 border border-wrong text-wrong flex items-center justify-center">☒</div>
+          <div className="w-10 h-10 border border-real text-real flex items-center justify-center">▣</div>
+          <div className="w-10 h-10 border border-border-dim text-muted flex items-center justify-center text-sm">5</div>
         </div>
       </section>
 
       {/* ── Screenshots ── */}
-      <section className="py-20 border-t border-outline/10 bg-surface-container-low/20 px-6">
-        <h2 className="text-2xl md:text-3xl font-extrabold text-foreground mb-12 text-center uppercase tracking-wide">
+      <section className="py-20 border-t border-border-dim bg-surface/20 px-6">
+        <h2 className="text-2xl md:text-3xl font-light text-foreground mb-12 text-center uppercase tracking-label">
           See the game
         </h2>
 
@@ -268,20 +246,20 @@ export default function HomeLandingPage() {
       </section>
 
       {/* ── Simple Elegant Footer ── */}
-      <footer className="py-12 bg-surface-container-lowest border-t border-outline/10 px-6 text-center text-xs">
+      <footer className="py-12 bg-surface-container-lowest border-t border-border-dim px-6 text-center text-xs">
         <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex flex-col items-center md:items-start gap-1">
             <div className="flex items-center gap-3">
-              <UncannyLogo size={20} className="text-accent-amber" />
-              <span className="font-sans uppercase tracking-[0.25em] text-foreground font-bold">UNCANNY</span>
+              <UncannyLogo size={20} className="text-foreground" />
+              <span className="font-mono uppercase tracking-kicker text-foreground font-bold">UNCANNY</span>
             </div>
-            <p className="text-[10px] text-muted/60 font-sans mt-1">Daily Perception Test</p>
+            <p className="font-mono text-label text-muted/60 mt-1 uppercase tracking-label">Daily Perception Test</p>
           </div>
-          <div className="flex flex-wrap justify-center gap-6 font-sans text-[10px] uppercase tracking-wider text-muted">
-            <Link href="/privacy" className="hover:text-foreground transition-all">Privacy</Link>
-            <Link href="/terms" className="hover:text-foreground transition-all">Terms</Link>
-            <Link href="/contact" className="hover:text-foreground transition-all">Contact</Link>
-            <Link href="/google-play" className="hover:text-foreground transition-all">Google Play Info</Link>
+          <div className="flex flex-wrap justify-center gap-6 font-mono text-label uppercase tracking-label text-muted">
+            <Link href="/privacy" className="hover:text-foreground active:text-foreground transition-all">Privacy</Link>
+            <Link href="/terms" className="hover:text-foreground active:text-foreground transition-all">Terms</Link>
+            <Link href="/contact" className="hover:text-foreground active:text-foreground transition-all">Contact</Link>
+            <Link href="/google-play" className="hover:text-foreground active:text-foreground transition-all">Google Play Info</Link>
           </div>
         </div>
       </footer>

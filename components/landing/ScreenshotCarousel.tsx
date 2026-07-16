@@ -32,7 +32,7 @@ export default function ScreenshotCarousel({ screenshots }: { screenshots: Scree
         {screenshots.map((ss, idx) => (
           <div key={idx} className="flex flex-col items-center text-center group">
             {/* Phone/Card Frame container - Made larger (max-w-[210px]) for perfect readability */}
-            <div className="relative aspect-[9/16] w-full max-w-[195px] lg:max-w-[215px] overflow-hidden rounded-[8px] border border-outline/15 bg-background shadow-2xl group-hover:scale-[1.03] group-hover:border-accent-amber/40 transition-all duration-300">
+            <div className="relative aspect-[9/16] w-full max-w-[195px] lg:max-w-[215px] overflow-hidden border border-border-dim bg-background group-hover:border-outline transition-all duration-300">
               <Image 
                 src={ss.src} 
                 alt={ss.title}
@@ -42,10 +42,10 @@ export default function ScreenshotCarousel({ screenshots }: { screenshots: Scree
                 priority
               />
             </div>
-            <h4 className="text-xs lg:text-sm font-bold text-accent-amber mt-5 mb-1.5 uppercase tracking-wider">
+            <h4 className="font-mono text-label lg:text-label-lg font-bold text-foreground mt-5 mb-1.5 uppercase tracking-label">
               {ss.title}
             </h4>
-            <p className="text-[10px] lg:text-xs text-muted px-2 font-light leading-relaxed max-w-[200px]">
+            <p className="text-label lg:text-xs text-muted px-2 font-light leading-relaxed max-w-[200px]">
               {ss.desc}
             </p>
           </div>
@@ -63,7 +63,7 @@ export default function ScreenshotCarousel({ screenshots }: { screenshots: Scree
         >
           {screenshots.map((ss, idx) => (
             <div key={idx} className="w-full flex-shrink-0 flex justify-center items-center snap-center px-6">
-              <div className="relative aspect-[9/16] w-full max-w-[240px] overflow-hidden rounded-[8px] border border-outline/20 bg-background shadow-2xl">
+              <div className="relative aspect-[9/16] w-full max-w-[240px] overflow-hidden border border-border-dim bg-background">
                 <Image 
                   src={ss.src} 
                   alt={ss.title}
@@ -79,7 +79,7 @@ export default function ScreenshotCarousel({ screenshots }: { screenshots: Scree
 
         {/* Caption placed directly underneath */}
         <div className="mt-5 text-center px-6 min-h-[64px] flex flex-col justify-center">
-          <h4 className="text-sm font-bold text-accent-amber uppercase tracking-wider">
+          <h4 className="font-mono text-label-lg font-bold text-foreground uppercase tracking-label">
             {screenshots[activeIndex]?.title}
           </h4>
           <p className="text-xs text-muted mt-1.5 font-light max-w-[260px] mx-auto leading-relaxed">
@@ -101,10 +101,10 @@ export default function ScreenshotCarousel({ screenshots }: { screenshots: Scree
                   });
                 }
               }}
-              className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
-                idx === activeIndex 
-                  ? 'bg-accent-amber w-5' 
-                  : 'bg-outline/25'
+              className={`h-1.5 transition-all duration-300 ${
+                idx === activeIndex
+                  ? 'bg-foreground w-5'
+                  : 'bg-border-dim w-1.5'
               }`}
               aria-label={`Go to slide ${idx + 1}`}
             />

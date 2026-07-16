@@ -18,10 +18,10 @@ export default function MobileNav() {
   return (
     <div className="flex items-center gap-4">
       {/* Desktop inline navigation */}
-      <nav className="hidden md:flex items-center gap-8 font-sans text-xs uppercase tracking-[0.2em] text-muted font-bold">
-        <Link href="/game" className="hover:text-foreground transition-all">Play</Link>
-        <a href="#how-it-works" className="hover:text-foreground transition-all">How It Works</a>
-        <a href="/uncanny-debug.apk" className="hover:text-foreground transition-all">Download</a>
+      <nav className="hidden md:flex items-center gap-8 font-mono text-label-lg uppercase tracking-label text-muted">
+        <Link href="/game" className="hover:text-foreground active:text-foreground transition-all">Play</Link>
+        <a href="#how-it-works" className="hover:text-foreground active:text-foreground transition-all">How It Works</a>
+        <a href="/uncanny-debug.apk" className="hover:text-foreground active:text-foreground transition-all">Download</a>
       </nav>
 
       {/* Mobile menu trigger */}
@@ -55,21 +55,21 @@ export default function MobileNav() {
             <Link 
               href="/game" 
               onClick={closeMenu}
-              className="font-sans text-2xl uppercase tracking-[0.2em] text-muted hover:text-foreground py-4 border-b border-outline/10 transition-all font-bold"
+              className="font-mono text-2xl uppercase tracking-label text-muted hover:text-foreground active:text-foreground py-4 border-b border-border-dim transition-all"
             >
               Play
             </Link>
             <a 
               href="#how-it-works" 
               onClick={closeMenu}
-              className="font-sans text-2xl uppercase tracking-[0.2em] text-muted hover:text-foreground py-4 border-b border-outline/10 transition-all font-bold"
+              className="font-mono text-2xl uppercase tracking-label text-muted hover:text-foreground active:text-foreground py-4 border-b border-border-dim transition-all"
             >
               How It Works
             </a>
             <a 
               href="/uncanny-debug.apk" 
               onClick={closeMenu}
-              className="font-sans text-2xl uppercase tracking-[0.2em] text-muted hover:text-foreground py-4 border-b border-outline/10 transition-all font-bold"
+              className="font-mono text-2xl uppercase tracking-label text-muted hover:text-foreground active:text-foreground py-4 border-b border-border-dim transition-all"
             >
               Download
             </a>
